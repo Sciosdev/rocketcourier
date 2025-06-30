@@ -25,9 +25,11 @@ public class VendorDto {
 	private String canalVenta;
 	private String preferenciaPagoFactura;
 	private String sitio;
-	private String email;
-	private String telefono;
-	private Binary logo;
+        private String email;
+        private String telefono;
+        private String shopifyApiKey;
+        private String shopifyAccessToken;
+        private Binary logo;
     private Boolean activo;
 
     /**
@@ -182,6 +184,22 @@ public class VendorDto {
      */
     public void setTelefono(String telefono) {
         this.telefono = telefono;
+    }
+
+    public String getShopifyApiKey() {
+        return shopifyApiKey;
+    }
+
+    public void setShopifyApiKey(String shopifyApiKey) {
+        this.shopifyApiKey = shopifyApiKey;
+    }
+
+    public String getShopifyAccessToken() {
+        return shopifyAccessToken;
+    }
+
+    public void setShopifyAccessToken(String shopifyAccessToken) {
+        this.shopifyAccessToken = shopifyAccessToken;
     }
 
     /**

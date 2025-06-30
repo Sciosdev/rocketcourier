@@ -24,6 +24,8 @@ public class VendorMapper {
         vendorServiceOutDto.setSitio(vendorDto.getSitio());
         vendorServiceOutDto.setEmail(vendorDto.getEmail());
         vendorServiceOutDto.setTelefono(vendorDto.getTelefono());
+        vendorServiceOutDto.setShopifyApiKey(vendorDto.getShopifyApiKey());
+        vendorServiceOutDto.setShopifyAccessToken(vendorDto.getShopifyAccessToken());
         vendorServiceOutDto.setActivo(vendorDto.isActivo());
         vendorServiceOutDto.setDireccionCompleta(vendorDto.getDireccionCompleta());
         vendorServiceOutDto.setDireccion(vendorDto.getDireccion());
@@ -48,6 +50,8 @@ public class VendorMapper {
         vendorDto.setSitio(vendorServiceDto.getSitio());
         vendorDto.setEmail(vendorServiceDto.getEmail());
         vendorDto.setTelefono(vendorServiceDto.getTelefono());
+        vendorDto.setShopifyApiKey(vendorServiceDto.getShopifyApiKey());
+        vendorDto.setShopifyAccessToken(vendorServiceDto.getShopifyAccessToken());
         vendorDto.setActivo(vendorServiceDto.isActivo());
         vendorDto.setDireccionCompleta(vendorServiceDto.getDireccionCompleta());
         if(vendorServiceDto.getDireccionCompleta() != null)
