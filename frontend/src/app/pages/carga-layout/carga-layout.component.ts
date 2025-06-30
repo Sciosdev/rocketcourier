@@ -1,4 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { NbAuthOAuth2JWTToken, NbAuthService } from '@nebular/auth';
+import { PrevisualizacionComponent } from './previsualizacion/previsualizacion.component';
+import { ShopifyService } from '../../services/shopify.service';
 
 @Component({
   selector: 'app-carga-layout',
@@ -7,9 +10,19 @@ import { Component, OnInit } from '@angular/core';
 })
 export class CargaLayoutComponent implements OnInit {
 
-  constructor() { }
+  @ViewChild(PrevisualizacionComponent)
+  previsualizacion: PrevisualizacionComponent;
+
+  user: any;
+
+  constructor(private shopifyService: ShopifyService, private authService: NbAuthService) { }
 
   ngOnInit(): void {
+    this.authService.onTokenChange().subscribe((token: NbAuthOAuth2JWTToken) => {
+      if (token.isValid()) {
+        this.user = token.getAccessTokenPayload();
+      }
+    });
   }
 
   archivoCargado:any;
@@ -36,5 +49,17 @@ export class CargaLayoutComponent implements OnInit {
 
   setTipoCarga($event) {
     this.tipoCarga = $event;
+  }
+
+  cargarMisEnvios() {
+    if (!this.user) {
+      return;
+    }
+    const vendor = this.user.user_name || this.user;
+    this.shopifyService.obtenerOrders(vendor).subscribe((data: any) => {
+      if (this.previsualizacion) {
+        this.previsualizacion.registerTest(JSON.stringify(data));
+      }
+    });
   }
 }
