@@ -35,6 +35,16 @@ export class TiendaService {
     return this.http.put(url, tienda, this.getOptions());
   }
 
+  obtenerCredencialesShopify(idTienda: number) {
+    const url = this.URL_SERVICIOS + '/vendor/' + idTienda + '/shopify';
+    return this.http.get(url, this.getOptions());
+  }
+
+  actualizarCredencialesShopify(idTienda: number, cred: any) {
+    const url = this.URL_SERVICIOS + '/vendor/' + idTienda + '/shopify';
+    return this.http.put(url, cred, this.getOptions());
+  }
+
 
   crearTienda(tienda: Tienda) {
 

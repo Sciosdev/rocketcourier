@@ -11,6 +11,7 @@ import com.rocket.service.mapper.VendorMapper;
 import com.rocket.service.model.DBResponse;
 import com.rocket.service.model.VendorCatalogServiceOutDto;
 import com.rocket.service.model.VendorServiceDto;
+import com.rocket.service.model.VendorCredentialsDto;
 import com.rocket.service.service.SequenceGeneratorService;
 import com.rocket.service.service.UsuarioService;
 import com.rocket.service.service.VendorService;
@@ -60,9 +61,9 @@ public class VendorController {
 	}
 
 	@RequestMapping(value = "/vendor-catalog", method = RequestMethod.GET, produces = { "application/json;charset=UTF-8" })
-	public ResponseEntity<String> getVendorCatalog() {
-		List<VendorDto> vendorDtos = service.obtenerTiendas();
-		List<VendorCatalogServiceOutDto> response = new ArrayList<>();
+        public ResponseEntity<String> getVendorCatalog() {
+                List<VendorDto> vendorDtos = service.obtenerTiendas();
+                List<VendorCatalogServiceOutDto> response = new ArrayList<>();
 
 		vendorDtos.forEach(vendorDto -> {
 			VendorCatalogServiceOutDto vendorCatalogServiceOutDto = VendorMapper.mapVendorDtoToVendorCatalogServiceOutDto(vendorDto);
@@ -70,9 +71,31 @@ public class VendorController {
 		});
 
 		Gson gson = new Gson();
-		String json = gson.toJson(response);
-		return new ResponseEntity<>(json, HttpStatus.OK);
-	}
+                String json = gson.toJson(response);
+                return new ResponseEntity<>(json, HttpStatus.OK);
+        }
+
+        @RequestMapping(value = "/vendor/{id}/shopify", method = RequestMethod.GET, produces = { "application/json;charset=UTF-8" })
+        public ResponseEntity<String> obtenerCredencialesShopify(@PathVariable Integer id) {
+                VendorDto vendorDto = service.obtenerTiendaPorId(id);
+                VendorCredentialsDto cred = new VendorCredentialsDto();
+                cred.setShopifyApiKey(vendorDto.getShopifyApiKey());
+                cred.setShopifyAccessToken(vendorDto.getShopifyAccessToken());
+
+                Gson gson = new Gson();
+                String json = gson.toJson(cred);
+                return new ResponseEntity<>(json, HttpStatus.OK);
+        }
+
+        @RequestMapping(value = "/vendor/{id}/shopify", method = RequestMethod.PUT, produces = { "application/json;charset=UTF-8" })
+        public ResponseEntity<String> actualizarCredencialesShopify(@PathVariable Integer id, @RequestBody VendorCredentialsDto cred) {
+                VendorDto vendorDto = service.obtenerTiendaPorId(id);
+                service.actualizarCredencialesShopify(vendorDto, cred.getShopifyApiKey(), cred.getShopifyAccessToken());
+
+                Gson gson = new Gson();
+                String json = gson.toJson(new DBResponse(true, "Credenciales actualizadas"));
+                return new ResponseEntity<>(json, HttpStatus.OK);
+        }
 
 	@RequestMapping(value = "/vendor", method = RequestMethod.PUT, produces = { "application/json;charset=UTF-8" })
 	public ResponseEntity<String> actualizarTienda(@RequestBody VendorServiceDto vendorServiceInDto) {

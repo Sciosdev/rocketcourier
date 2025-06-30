@@ -61,10 +61,17 @@ public class VendorService {
 		return tiendas;
 	}
 
-	public VendorDto setActivo(VendorDto tienda, Boolean activo){		
-		tienda.setActivo(activo);
+        public VendorDto setActivo(VendorDto tienda, Boolean activo){
+                tienda.setActivo(activo);
 
-		return vendorRepository.save(tienda);
-	}
+                return vendorRepository.save(tienda);
+        }
+
+        public VendorDto actualizarCredencialesShopify(VendorDto tienda, String apiKey, String accessToken){
+                tienda.setShopifyApiKey(apiKey);
+                tienda.setShopifyAccessToken(accessToken);
+
+                return vendorRepository.save(tienda);
+        }
 
 }
