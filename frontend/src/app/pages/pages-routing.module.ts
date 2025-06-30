@@ -55,7 +55,7 @@ const routes: Routes = [{
       component: ConfiguracionComponent,
       canActivate: [AuthGuard],
       data: {
-        resource: ['admin'],
+        resource: ['customer'],
       },
     },
     {

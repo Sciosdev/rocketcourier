@@ -29,6 +29,7 @@ public class VendorDto {
         private String telefono;
         private String shopifyApiKey;
         private String shopifyAccessToken;
+        private String shopifyStoreUrl;
         private Binary logo;
     private Boolean activo;
 
@@ -200,6 +201,14 @@ public class VendorDto {
 
     public void setShopifyAccessToken(String shopifyAccessToken) {
         this.shopifyAccessToken = shopifyAccessToken;
+    }
+
+    public String getShopifyStoreUrl() {
+        return shopifyStoreUrl;
+    }
+
+    public void setShopifyStoreUrl(String shopifyStoreUrl) {
+        this.shopifyStoreUrl = shopifyStoreUrl;
     }
 
     /**
