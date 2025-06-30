@@ -14,10 +14,11 @@ public class VendorServiceDto {
 	private String canalVenta;
 	private String preferenciaPagoFactura;
 	private String sitio;
-	private String email;
+        private String email;
         private String telefono;
         private String shopifyApiKey;
         private String shopifyAccessToken;
+        private String shopifyStoreUrl;
         private String logo;
     private Boolean activo;
 
@@ -189,6 +190,14 @@ public class VendorServiceDto {
 
     public void setShopifyAccessToken(String shopifyAccessToken) {
         this.shopifyAccessToken = shopifyAccessToken;
+    }
+
+    public String getShopifyStoreUrl() {
+        return shopifyStoreUrl;
+    }
+
+    public void setShopifyStoreUrl(String shopifyStoreUrl) {
+        this.shopifyStoreUrl = shopifyStoreUrl;
     }
 
     /**
