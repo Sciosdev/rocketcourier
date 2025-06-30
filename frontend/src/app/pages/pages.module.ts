@@ -22,6 +22,7 @@ import { ConsultaInformacionModule } from './consulta-informacion/consulta-infor
 import { NgxSpinnerModule } from 'ngx-spinner';
 import { GestionUsuariosModule } from './gestion-usuarios/gestion-usuarios.module';
 import { GestionTiendasModule } from './gestion-tiendas/gestion-tiendas.module';
+import { ConfiguracionModule } from './configuracion/configuracion.module';
 import { GlobalAcceptanceComponent } from './common-popups/global-acceptance/global-acceptance.component';
 
 @NgModule({
@@ -45,7 +46,8 @@ import { GlobalAcceptanceComponent } from './common-popups/global-acceptance/glo
     NgxSpinnerModule,
     GestionUsuariosModule,
     GestionTiendasModule,
-    
+    ConfiguracionModule,
+
 ],
   providers: [],
   exports: []
