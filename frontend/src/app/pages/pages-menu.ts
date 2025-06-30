@@ -38,6 +38,15 @@ export const admin_menu: NbMenuItem[] = [
     },
   },
   {
+    title: 'Configuración',
+    icon: 'settings-outline',
+    link: '/intranet/configuracion',
+    data: {
+      permission: 'menu',
+      resource: ['customer']
+    },
+  },
+  {
     title: 'Administración',
     icon: 'settings-2-outline',
     data: {
