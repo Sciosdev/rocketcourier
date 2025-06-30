@@ -21,7 +21,7 @@ export class ConfiguracionComponent implements OnInit {
       shopifyApiKey: this.apiKey,
       shopifyAccessToken: this.accessToken
     };
-    // Por simplicidad se asume id 1. En un caso real podría obtenerse de otra fuente
+    // Por simplicidad se utiliza el id 1 en este ejemplo. En un caso real podría obtenerse de otra fuente
     this.tiendaService.actualizarCredencialesShopify(1, cred).subscribe(
       () => (this.saving = false),
       () => (this.saving = false)
