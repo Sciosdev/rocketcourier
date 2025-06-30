@@ -1,0 +1,60 @@
+<div class="d-flex justify-content-lg-end flex-wrap" >
+    <div class="p-2">
+      <button mat-raised-button color="primary" matRipple (click)="crearTienda()">
+        <nb-icon icon="plus-circle-outline"></nb-icon>
+        Agregar Tienda
+      </button>
+    </div>
+</div>
+
+<div class="mat-elevation-z8">
+    <mat-table [dataSource]="dataSource">
+
+        <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+        <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+
+        <ng-container matColumnDef="Nombre">
+            <mat-header-cell *matHeaderCellDef> Nombre </mat-header-cell>
+            <td mat-cell *matCellDef="let tienda"> {{tienda.nombreTienda}} </td>
+        </ng-container>
+        <ng-container matColumnDef="Correo">
+            <mat-header-cell *matHeaderCellDef> Correo </mat-header-cell>
+            <td mat-cell *matCellDef="let tienda"> {{tienda.email}} </td>
+        </ng-container>
+        <ng-container matColumnDef="Telefono">
+            <mat-header-cell *matHeaderCellDef> Teléfono </mat-header-cell>
+            <td mat-cell *matCellDef="let tienda"> {{tienda.telefono}} </td>
+        </ng-container>
+        <ng-container matColumnDef="Sitio">
+            <mat-header-cell *matHeaderCellDef> Sitio </mat-header-cell>
+            <td mat-cell *matCellDef="let tienda"> {{tienda.sitio}} </td>
+        </ng-container>
+        <ng-container matColumnDef="Direccion">
+            <mat-header-cell *matHeaderCellDef> Dirección </mat-header-cell>
+            <td mat-cell *matCellDef="let tienda"> {{tienda.direccion}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="Acciones">
+            <mat-header-cell *matHeaderCellDef> Acciones </mat-header-cell>
+            <mat-cell *matCellDef="let tienda">
+                <button mat-button (click)="modificarTienda(tienda)" nbTooltip="Modificar Tienda"
+                    nbTooltipStatus="primary">
+                    <nb-icon icon="edit-outline" style="color: rgb(111, 0, 255);"></nb-icon>
+                </button>
+
+                <button mat-button (click)="eliminarTienda(tienda)" nbTooltip="Eliminar Tienda"
+                    nbTooltipStatus="primary">
+                    <nb-icon icon="trash-2-outline" style="color: rgb(255, 0, 0);"></nb-icon>
+                </button>
+            </mat-cell>
+            
+        </ng-container>
+    </mat-table>
+
+    <div class="d-flex align-content-center justify-content-center"
+        *ngIf="registros.length === 0 ||  dataSource.filteredData.length  === 0">No se encontraron
+        usuarios con los criterios seleccionados</div>
+
+    <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+
+</div>

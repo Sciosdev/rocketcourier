@@ -1,0 +1,90 @@
+<nb-card status="primary">
+  <nb-card-header>Cambio de estatus</nb-card-header>
+  <nb-card-body>
+    <div class="d-flex justify-content-center">
+      <div class="p-2 text-primary">
+        Estatus actual: <b>{{currentEstatus.desc}}</b>
+      </div>
+    </div>
+    <hr>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="p-2 text-info">
+          <b>
+            Selecciona el nuevo estatus
+          </b>
+          <br />
+          <mat-form-field appearance="standard">
+            <mat-label>Estatus</mat-label>
+            <mat-select [(value)]="selectedEstatus" [formControl]="estatusFormControl" required style="width: 100%;">
+              <mat-option *ngFor="let estatus of estatusList" [value]="estatus">
+                {{estatus.desc}}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="estatusFormControl.hasError('required')">
+              Este campo es requerido
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="d-flex justify-content-center" style="height: 100%;">
+          <div class="p-2">
+
+            <b>
+              Total de registros a modificar
+            </b>
+            <br>
+            <h3 style="text-align: center">
+              {{totalRegistros}}
+            </h3>
+
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+
+        <div class="d-flex flex-column align-items-left" style="height: 100%;">
+
+          <div class="p-2 text-info" *ngIf="enableFinalComment">
+            <h5>Comentarios</h5>
+            <textarea rows="7" [(ngModel)]="comentario" cols="50" pInputTextarea
+              placeholder="Escribe un comentario ... "></textarea>
+          </div>
+          <div class="p-2 text-success" *ngIf="activateReassignCourier()">
+            <b>
+              Reasignar Courier
+            </b>
+            <br />
+            <mat-form-field>
+              <mat-label>Courier</mat-label>
+              <mat-select [(value)]="selectedCourier" style="width: 100%;">
+                <mat-option *ngFor="let courier of courierList" [value]="courier.user">
+                  {{courier.name}}
+                </mat-option>
+              </mat-select>
+
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="d-flex justify-content-end">
+      <div class="p-2">
+        <button mat-raised-button color="accent" matRipple (click)="accept()"
+          [disabled]='estatusFormControl.hasError("required")'>
+          <nb-icon icon="checkmark-square-2-outline"></nb-icon>
+          Establecer nuevo estatus
+        </button>
+      </div>
+      <div class="p-2">
+        <button mat-raised-button color="primary" matRipple (click)="cancel()">
+          <nb-icon icon="close-square-outline"></nb-icon>
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </nb-card-body>
+</nb-card>

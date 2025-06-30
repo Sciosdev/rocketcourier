@@ -1,0 +1,12 @@
+:host ::ng-deep {    
+    .p-datatable table {
+        table-layout: inherit !important;
+        white-space: nowrap
+    }
+}
+
+:host ::ng-deep .header {
+    background-color: #ff7010 !important;
+    color: rgb(255, 255, 255) !important;
+    font-weight: bold;
+}

@@ -1,0 +1,14 @@
+<div NgxLoadingXBlur [show]="loading">
+    <nb-alert outline="info">
+        <form>
+            <app-filtro-consulta (registros)=setRegistros($event) (loading)=setLoading($event)></app-filtro-consulta>
+        </form>
+    </nb-alert>
+
+    <nb-alert outline="info" *ngIf="registros!=null">
+        <app-resultado-consulta-usuarios [registros]="registros" (loading)=setLoading($event)>
+        </app-resultado-consulta-usuarios>
+    </nb-alert>
+</div>
+<ngx-loading-x [show]="loading">
+</ngx-loading-x>

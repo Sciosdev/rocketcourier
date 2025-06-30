@@ -1,0 +1,14 @@
+.login-container {
+    display: flex;
+    flex-direction: column;
+}
+    
+.login-container>* {
+    width: 100%;
+}
+
+
+.rocket-bg {
+    background-color: rgb(253, 246, 240);
+    width: 100%;
+  }

@@ -1,0 +1,4 @@
+{
+    "urlAuthServer": "http://localhost:3000",
+    "urlPredictorServer": "http://localhost:5000"
+}

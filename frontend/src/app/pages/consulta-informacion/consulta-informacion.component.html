@@ -1,0 +1,13 @@
+<nb-alert outline="info">
+<form>
+    <app-filtro (registros) = setRegistros($event) (loading) = setLoading($event) (vendor) = "setVendor($event)" (sEstatus) = setEstatus($event)></app-filtro>
+</form>
+
+</nb-alert>
+
+<nb-alert outline="info" *ngIf="registros!=null"> 
+    <app-resultado-consulta [registros] = "registros" [vendor] = "vendor" [sEstatus] = "estatus" (regis) = setRegistros($event) (loading) = setLoading($event)></app-resultado-consulta>
+</nb-alert>
+
+<ngx-loading-x [show]="loading">
+</ngx-loading-x>

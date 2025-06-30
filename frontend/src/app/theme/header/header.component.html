@@ -1,0 +1,38 @@
+<div class="header-container">
+
+  <div class="logo-container">
+    <a href="#" class="sidebar-toggle" matRipple [matRippleUnbounded]="true" [matRippleCentered]="true"
+      (click)="toggleSidebar()">
+      <nb-icon [icon]="(materialTheme$ | async) ? 'menu-outline' : 'menu-2-outline'"></nb-icon>
+    </a>
+    <!-- <a class="logo" href="#" (click)="goToHome()">Consola - <span>Rocket Courier</span></a> -->
+  </div>
+
+</div>
+
+<div class="header-container">
+  <!-- <div *ngIf="user">Sesion expirara en {{remainingTime()}} segundo(s).</div> -->
+  <nb-actions>
+
+    <nb-action class="user-action" matRipple [matRippleUnbounded]="true" [matRippleCentered]="true">
+      <nb-user [name]="user?.fullname" color="#cccccc" 
+        [nbContextMenu]="userMenu" *ngIf="user"></nb-user>
+      <button mat-raised-button color="warn" type="button" (click)="goToLogin()" *ngIf="!user">
+        <nb-icon icon="log-in-outline"></nb-icon>
+        Iniciar Sesión
+      </button>
+    </nb-action>
+  </nb-actions>
+</div>
+<!-- <nb-select
+    status="primary"
+    matRipple
+    [selected]="currentTheme"
+    (selectedChange)="changeTheme($event)"
+  >
+    <nb-option
+      *ngFor="let theme of themes"
+      [value]="theme.value"
+      matRipple
+    >{{ theme.name }}</nb-option>
+  </nb-select> -->

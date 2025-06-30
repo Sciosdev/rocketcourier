@@ -1,0 +1,13 @@
+<nb-alert outline="info">
+    <form>
+        <app-filtro-consulta-tiendas (registros)=setRegistros($event) (loading)=setLoading($event)></app-filtro-consulta-tiendas>
+    </form>
+
+</nb-alert>
+
+<nb-alert outline="info" *ngIf="registros!=null">
+    <app-resultado-consulta-tiendas [registros] = "registros" (loading)=setLoading($event)></app-resultado-consulta-tiendas>
+</nb-alert>
+
+<ngx-loading-x [show]="loading">
+</ngx-loading-x>

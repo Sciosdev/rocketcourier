@@ -1,0 +1,85 @@
+<div class="d-flex flex-row align-items-center flex-wrap">
+  <div class="mr-auto p-2">
+    <mat-form-field appearance="standard" *ngIf="isAdmin">
+      <mat-label>Vendedor</mat-label>
+      <mat-select [(value)]="selectedVendor" [formControl]="adminFormControl" multiple >
+        <mat-select-trigger>
+          {{vendorList ? vendorList[0] : ''}}
+          <span *ngIf="vendorList?.length > 1" class="example-additional-selection">
+            (+{{vendorList.length - 1}} {{vendorList?.length === 2 ? 'vendedor' : 'vendedores'}})
+          </span>
+        </mat-select-trigger>
+        <mat-option *ngFor="let user of users_combo" [value]="user.user" (onSelectionChange)="setVendor(user)">
+          {{user.name}}
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="adminFormControl.hasError('required')">
+        Este campo es requerido
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="standard" *ngIf="isCustomer">
+      <mat-label>Vendedor</mat-label>
+      <input matInput [formControl]="usuarioFormControl" required>
+      <mat-error *ngIf="usuarioFormControl.hasError('required')">
+        Este campo es requerido
+      </mat-error>
+    </mat-form-field>
+    
+    <mat-form-field appearance="standard" *ngIf="isCourier">
+      <mat-label>Courier</mat-label>
+      <input matInput [formControl]="usuarioFormControl" required>
+      <mat-error *ngIf="usuarioFormControl.hasError('required')">
+        Este campo es requerido
+      </mat-error>
+    </mat-form-field>
+  </div>
+
+  <div class="mr-auto p-2" *ngIf="isAdmin">
+    <mat-form-field appearance="standard">
+      <mat-label>Courier</mat-label>
+      <mat-select [(value)]="selectedCourier"  [formControl]="selectCourierFormControl">
+        <mat-option >Sin Selección</mat-option>
+        <mat-option *ngFor="let courier of courier_combo" [value]="courier.user" >
+          {{courier.name}}
+        </mat-option>
+      </mat-select>
+ 
+    </mat-form-field>
+  </div>
+  
+  <div class="mr-auto p-2">
+    <mat-form-field appearance="standard" class="form-inline">
+      <mat-label>Estatus</mat-label>
+      <mat-select [(value)]="selectedEstatus" required [formControl]="selectFormControl">
+        <mat-option>--</mat-option>
+        <mat-option *ngFor="let st of estatus" [value]="st">
+          {{st.desc}}
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="selectFormControl.hasError('required')">
+        Este campo es requerido
+      </mat-error>
+    </mat-form-field>
+  </div>
+
+  <div class="mr-auto p-2">
+
+    <mat-form-field appearance="standard">
+      <mat-label>Fecha de carga</mat-label>
+      <input [nbDatepicker]="rangepicker" matInput placeholder="Rango de fecha"
+        [value]="(range.start | date) + '-' + (range.end | date)" [disabled]="!checked" [required]="checked">
+    </mat-form-field>
+    <mat-checkbox class="example-margin" [(ngModel)]="checked" class="ml-2"></mat-checkbox>
+    <nb-rangepicker #rangepicker [(range)]="range"></nb-rangepicker>
+
+  </div>
+  
+  <div class="ml-auto p-2">
+    <button mat-raised-button color="accent" matRipple (click)="obtenerRegistros()" class="button-purple"
+      [disabled]="validateInput()">
+      <nb-icon icon="search-outline"></nb-icon>
+      Traer Registros
+    </button>
+  </div>
+</div>

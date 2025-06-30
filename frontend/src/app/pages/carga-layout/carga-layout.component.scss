@@ -1,0 +1,101 @@
+@import '../../../themes';
+
+@include nb-install-component {
+.label-archivo-cargado {
+    min-width: 300px;
+    max-width: 100%;
+    width: 350px;
+}
+
+.demo-chart {
+  height: 400px;
+}
+
+.extended-fab-button {
+    width: unset;
+    padding: 0 26px;
+    border-radius: 29px;
+    .mat-icon {
+        margin-right: 10px;
+    }
+    .extended-fab-button__text {
+        font-weight: 300;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+}
+
+*:focus {
+    outline: none;
+}
+
+//table ui
+::ng-deep .ui-table table,
+.ui-table table {
+    table-layout: auto !important;
+}
+
+::ng-deep .ui-table {
+  border: 1px solid nb-theme(border-basic-color-1) !important;
+}
+
+::ng-deep .ui-table .ui-table-thead > tr > th {
+  background-color: nb-theme(background-basic-color-4) !important;
+  color: nb-theme(text-basic-color) !important;
+}
+
+::ng-deep .ui-table .ui-table-tbody > tr:nth-child(even) {
+  background-color: nb-theme(background-basic-color-2) !important;
+  color: nb-theme(text-basic-color) !important;
+}
+::ng-deep .ui-table .ui-table-tbody > tr:nth-child(odd) {
+  background-color: nb-theme(background-basic-color-1) !important;
+  color: nb-theme(text-basic-color) !important;
+}
+
+::ng-deep .ui-table .ui-table-tbody > tr:nth-child(even):hover {
+  background-color: nb-theme(background-basic-color-4) !important;
+  color: nb-theme(text-basic-color) !important;
+}
+::ng-deep .ui-table .ui-table-tbody > tr:nth-child(odd):hover {
+  background-color: nb-theme(background-basic-color-4) !important;
+  color: nb-theme(text-basic-color) !important;
+}
+
+::ng-deep .ui-table-tablewrapper {
+    width: auto!important;
+}
+
+::ng-deep .ui-table-resizable {
+    padding-bottom: 1px;
+    /* overflow: auto; */
+    width: auto !important;
+}
+
+.ui-table .ui-table-tbody>tr,
+.ui-table .ui-table-thead>tr>th,
+.ui-table .ui-table-tfoot>tr>td {
+    max-width: 300px !important;
+    font-size: 12px;
+    padding: 0px !important;
+    padding-left: 4px !important;
+    color: black;
+    text-transform: capitalize;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis !important;
+    border-width: 0px;
+}
+
+//selector could be change with your tr td markup
+.ui-datatable * {
+  border : 0px !important;
+}
+.layout-background-color{
+  background-color: crimson;
+}
+
+::ng-deep nb-select .select-button {
+  min-width: 4rem;
+}
+}

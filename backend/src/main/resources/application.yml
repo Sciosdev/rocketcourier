@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: rocket-back-end
+  data:
+    mongodb:
+      #uri: mongodb+srv://desarrollo:YZu7bo1kLxqL7OBL@app-cluster0.rffrf.mongodb.net/Rocket?authSource=admin&replicaSet=app-cluster0-shard-0&w=majority&readPreference=primary&retryWrites=true&ssl=true
+      database: Rocket
+      host: ec2-18-219-148-208.us-east-2.compute.amazonaws.com
+      password: NuevaPassword123
+      port: 27017
+      username: sciosUser
+      authentication-database: admin
+  servlet:
+    multipart:
+      max-file-size: 256MB
+      max-request-size: 256MB
+      enabled: true
+  jpa:
+    properties:
+      hibernate.validator.apply_to_ddl: true
+    show-sql: true
+security:
+   oauth2:
+      resource:
+         filter-order: 3

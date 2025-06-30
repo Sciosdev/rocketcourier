@@ -1,0 +1,169 @@
+<h1 id="title" class="title">Registro</h1>
+
+<nb-alert
+  *ngIf="showMessages.error && errors?.length && !submitted"
+  outline="danger"
+  role="alert"
+>
+  <p class="alert-title">
+    <b>{{ titulo }}</b>
+  </p>
+  <ul class="alert-message-list">
+    <li *ngFor="let error of errors" class="alert-message">{{ error }}</li>
+  </ul>
+</nb-alert>
+
+<nb-alert
+  *ngIf="showMessages.success && messages?.length && !submitted"
+  outline="success"
+  role="alert"
+>
+  <p class="alert-title"><b>Éxito</b></p>
+  <ul class="alert-message-list">
+    <li *ngFor="let message of messages" class="alert-message">
+      {{ message }}
+    </li>
+  </ul>
+</nb-alert>
+
+<form (ngSubmit)="register()" #form="ngForm" aria-labelledby="title">
+  <div class="form-control-group">
+    <label class="label" for="input-name">Nombre:</label>
+    <input
+      nbInput
+      [(ngModel)]="user.name"
+      #nombre="ngModel"
+      id="input-name"
+      name="nombre"
+      placeholder="Nombre"
+      autofocus
+      fullWidth
+      [status]="email.dirty ? (email.invalid ? 'danger' : 'success') : ''"
+      [required]="getConfigValue('forms.validation.nombre.required')"
+      [minlength]="getConfigValue('forms.validation.nombre.minLength')"
+      [maxlength]="getConfigValue('forms.validation.nombre.maxLength')"
+      [attr.aria-invalid]="nombre.invalid && nombre.touched ? true : null"
+    />
+    <ng-container *ngIf="nombre.invalid && nombre.touched">
+      <p class="error-message" *ngIf="nombre.errors?.required">
+        El nombre es requerido
+      </p>
+      <p
+        class="error-message"
+        *ngIf="nombre.errors?.minlength || nombre.errors?.maxlength"
+      >
+        El nombre completo debe estar formado de entre
+        {{ getConfigValue('forms.validation.nombre.minLength') }} y
+        {{ getConfigValue('forms.validation.nombre.maxLength') }}
+        letras.
+      </p>
+    </ng-container>
+  </div>
+
+  <div class="form-control-group">
+    <label class="label" for="input-email">Correo:</label>
+    <input
+      nbInput
+      [(ngModel)]="user.email"
+      #email="ngModel"
+      id="input-email"
+      name="email"
+      pattern=".+@.+..+"
+      placeholder="Correo electrónico"
+      fullWidth
+      [status]="email.dirty ? (email.invalid ? 'danger' : 'success') : ''"
+      [required]="getConfigValue('forms.validation.email.required')"
+      [attr.aria-invalid]="email.invalid && email.touched ? true : null"
+    />
+    <ng-container *ngIf="email.invalid && email.touched">
+      <p class="error-message" *ngIf="email.errors?.required">
+        El correo es requerido
+      </p>
+      <p class="error-message" *ngIf="email.errors?.pattern">
+        El correo debe ser uno real
+      </p>
+    </ng-container>
+  </div>
+
+  <div class="form-control-group">
+    <label class="label" for="input-password">Contraseña:</label>
+    <input
+      nbInput
+      [(ngModel)]="user.password"
+      #password="ngModel"
+      type="password"
+      id="input-password"
+      name="password"
+      placeholder="Contraseña"
+      fullWidth
+      [status]="email.dirty ? (email.invalid ? 'danger' : 'success') : ''"
+      [required]="getConfigValue('forms.validation.password.required')"
+      [minlength]="getConfigValue('forms.validation.password.minLength')"
+      [maxlength]="getConfigValue('forms.validation.password.maxLength')"
+      [attr.aria-invalid]="password.invalid && password.touched ? true : null"
+    />
+    <ng-container *ngIf="password.invalid && password.touched">
+      <p class="error-message" *ngIf="password.errors?.required">
+        La contraseña es requerida!
+      </p>
+      <p
+        class="error-message"
+        *ngIf="password.errors?.minlength || password.errors?.maxlength"
+      >
+        La contraseña debe tener entre
+        {{ getConfigValue('forms.validation.password.minLength') }} y
+        {{ getConfigValue('forms.validation.password.maxLength') }}
+        caracteres
+      </p>
+    </ng-container>
+  </div>
+
+  <div class="form-control-group">
+    <label class="label" for="input-re-password">Confirmar contraseña:</label>
+    <input
+      nbInput
+      [(ngModel)]="user.confirmPassword"
+      #rePass="ngModel"
+      type="password"
+      id="input-re-password"
+      name="rePass"
+      placeholder="Confirmar contraseña"
+      fullWidth
+      [status]="
+        email.dirty
+          ? email.invalid || password.value != rePass.value
+            ? 'danger'
+            : 'success'
+          : ''
+      "
+      [required]="getConfigValue('forms.validation.password.required')"
+      [attr.aria-invalid]="rePass.invalid && rePass.touched ? true : null"
+    />
+    <ng-container *ngIf="rePass.invalid && rePass.touched">
+      <p class="error-message" *ngIf="rePass.errors?.required">
+        La confirmación de la contraseña es requerida.
+      </p>
+      <p
+        class="error-message"
+        *ngIf="password.value != rePass.value && !rePass.errors?.required"
+      >
+        Las contraseñas deben de coincidir.
+      </p>
+    </ng-container>
+  </div>
+
+  <button
+    nbButton
+    fullWidth
+    status="success"
+    [disabled]="submitted || !form.valid"
+    [class.btn-pulse]="submitted"
+  >
+    Registrar
+  </button>
+</form>
+
+<section class="another-action" aria-label="Sign in">
+  ¿Ya tienes una cuenta?
+  <a class="text-link" routerLink="../login">Iniciar sesión</a>
+</section>

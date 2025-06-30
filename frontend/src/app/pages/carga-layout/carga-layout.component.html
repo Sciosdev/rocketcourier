@@ -1,0 +1,19 @@
+<nb-card>
+  <nb-card-body style="padding: 50px;">
+    <nb-stepper #stepper disableStepNavigation>
+
+      <nb-step label="Carga de archivo">
+        <app-carga-archivo (archivoCargado)=setArchivoCargado($event) (procesado)=setProcesado($event) (tipoCarga)="setTipoCarga($event)"></app-carga-archivo>
+      </nb-step>
+
+      <nb-step label="Previsualización">
+        <app-previsualizacion [tipoCarga]="tipoCarga" [archivoCargado]="archivoCargado" [procesado]="procesado" (resultado)=setResultado($event)
+          (errores)="setErrores($event)"></app-previsualizacion>
+      </nb-step>
+
+      <nb-step label="Resultado">
+        <app-show-result [resultado]="resultado" [errores]="errores" ></app-show-result>
+      </nb-step>
+    </nb-stepper>
+  </nb-card-body>
+</nb-card>

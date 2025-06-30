@@ -1,0 +1,59 @@
+nb-sidebar,
+nb-sidebar>div.main-container {
+    transition: width 0.3s;
+}
+
+@mixin material-overrides() {
+  @include nb-for-themes(material-dark, material-dark-blue, material-light) {
+.rocket-content {
+  background-color: column-layout-bg-color;
+}
+  }
+}
+
+nb-sidebar {
+  .compacted{
+    display: none;
+  }
+  .expanded{
+    display: block;
+  }  
+  &.compacted {
+    nb-sidebar-header {
+      .expanded{
+        display: none;
+      } 
+      .compacted{
+        display: block;
+        margin-left: -10px;
+      }     
+    }
+  }
+  &.expanded {
+    nb-sidebar-header {
+      .compacted{
+        display: none;
+      }
+      .expanded{
+        display: block;
+      }  
+    }
+  }
+}
+
+
+.rocket-bg {
+  background-color: rgb(253, 246, 240);
+  height: 100%;
+
+}
+
+.background {
+  background-image: url("../../assets/images/fondo.png");
+  background-color: rgb(253, 246, 240);
+  height: 100%;
+  background-position: bottom;
+  background-repeat: no-repeat;
+  background-size: contain;
+  position: relative;
+}

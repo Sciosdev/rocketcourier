@@ -1,0 +1,25 @@
+<nb-layout>
+    <nb-layout-header fixed>
+        <app-header></app-header>
+    </nb-layout-header>
+
+    <nb-sidebar class="menu-sidebar" tag="menu-sidebar" responsive>
+        <nb-sidebar-header>
+            <img src="../../assets/images/rocket_courier.png" class="expanded" />
+            <img src="../../assets/images/favicon.png" class="compacted" width="38px" height="26px" />
+        </nb-sidebar-header>
+        <!--  <div>
+            <img src="../../assets/images/rocket_courier.png"/>
+        </div> -->
+
+        <nb-menu [items]="menu"> </nb-menu>
+    </nb-sidebar>
+
+    <nb-layout-column class="rocket-bg">
+       
+        <router-outlet></router-outlet>
+    </nb-layout-column>
+    <nb-layout-footer>
+        <app-footer></app-footer>
+    </nb-layout-footer>
+</nb-layout>

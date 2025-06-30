@@ -1,0 +1,15 @@
+.form-inline [fullWidth] {
+    flex: 1;
+  }
+  
+  .form-inline > * {
+    margin: 0 1.5rem 1.5rem 0;
+  }
+
+
+.button-purple {
+  background-color: blueviolet !important;
+}
+.button-purple:disabled{
+  background-color: rgba(0, 0, 0, 0.12) !important;
+}

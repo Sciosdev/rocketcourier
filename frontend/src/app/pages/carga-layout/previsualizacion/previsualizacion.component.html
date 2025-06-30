@@ -1,0 +1,47 @@
+<h2>Previsualización</h2>
+<nb-alert outline="info">
+
+  <p>1.- Revisa que los datos correspondan con el archivo cargado.</p>
+
+  <p>2.- Una vez verificado que la información es la correcta, da clic en continuar para procesar el
+    archivo.</p>
+
+</nb-alert>
+<div class="mat-elevation-z8">
+  <p-table [value]="prevRows" [columns]="headerExcel"
+    [style]="{'overflow-y': 'hidden', 'display': 'block', 'overflow-x': 'auto', 'white-space': 'nowrap', 'width': '100%'}"
+    scrollHeight="200px" [rowHover]="true" styleClass="p-datatable-striped">
+
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th *ngFor="let col of headerExcel" [ngStyle]="{'width':'max-content', 'padding': '0.5rem 0.5rem'}"
+          [ngClass]="'header'">
+          {{col.header}}
+        </th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-item>
+      <tr>
+        <td *ngFor="let col of headerExcel" [ngStyle]="{'padding': '0.5rem 0.5rem'}">
+          {{item[col.field]}}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+<hr class="my-4">
+
+<button mat-raised-button color="warn" nbStepperPrevious (click)="reiniciar()" type="button">
+  <nb-icon icon="arrow-circle-left-outline"></nb-icon>
+  Regresar
+</button>
+<button mat-raised-button color="primary" (click)="register()" type="button"
+  [ngStyle]="{'float':'right'}">
+  <nb-icon icon="arrow-circle-right-outline"></nb-icon>
+  Continuar
+</button>
+
+
+<ngx-loading-x [show]="load">
+</ngx-loading-x>

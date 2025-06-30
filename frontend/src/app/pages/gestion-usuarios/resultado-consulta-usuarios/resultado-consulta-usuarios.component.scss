@@ -1,0 +1,51 @@
+:host ::ng-deep {    
+    .p-datatable table {
+        table-layout: inherit !important;
+        white-space: nowrap
+    }
+}
+
+:host ::ng-deep .header {
+    background-color: #ff7010 !important;
+    color: rgb(255, 255, 255) !important;
+    font-weight: bold;
+}
+
+.mat-table {
+    overflow-x: scroll;
+    line-height: 0.25rem;
+  }
+  
+  .mat-cell,
+  .mat-header-cell {
+    word-wrap: initial;
+    display: table-cell;
+    padding: 0px 10px;
+    line-break: unset;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    vertical-align: middle;
+    border: 1px solid rgb(255, 150, 102);
+  }
+  
+  .mat-row,
+  .mat-header-row {
+    display: table-row;
+    
+  }
+
+  .mat-header-cell {
+    color: rgb(255, 255, 255) !important;
+    font-weight: bold;
+    text-align: center;
+  }
+  .mat-header-row{
+    background-color: #ff7010 !important;
+   
+  }
+
+  .mat-cell:first-of-type {
+    padding: 0px 10px;
+    text-align: center;
+  }

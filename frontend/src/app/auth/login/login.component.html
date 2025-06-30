@@ -1,0 +1,61 @@
+
+<h1 id="title" class="title">Iniciar sesión</h1>
+<p class="sub-title">Hola, por favor identificate con tu usuario</p>
+
+<nb-alert *ngIf="showMessages.error && errors?.length && !submitted" outline="danger" role="alert">
+    <p class="alert-title"><b>Error al iniciar sesión</b></p>
+    <ul class="alert-message-list">
+        <li>Combinación usuario/contraseña incorrecta</li>
+    </ul>
+</nb-alert>
+
+<nb-alert *ngIf="showMessages.success && messages?.length && !submitted" outline="primary" role="alert">
+    <p class="alert-title"><b>Éxito</b></p>
+    <ul class="alert-message-list">
+        <li>
+            Sesión iniciada correctamente.
+        </li>
+    </ul>
+</nb-alert>
+<div NgxLoadingXBlur [show]="loading">
+<form (ngSubmit)="login()" #form="ngForm" aria-labelledby="title">
+    <div class="login-container">
+        <mat-form-field appearance="outline">
+            <mat-label>Nombre de usuario</mat-label>
+            <input matInput placeholder="Nombre" [formControl]="nameFormControl" />
+            <mat-icon matSuffix>account_circle</mat-icon>
+            <mat-error *ngIf="nameFormControl.hasError('required')">
+                El nombre es <strong>REQUERIDO</strong>
+            </mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+            <mat-label>Contraseña</mat-label>
+            <input matInput placeholder="Contraseña" [formControl]="passwordFormControl" type="password" />
+            <mat-icon matSuffix>lock</mat-icon>
+            <mat-error *ngIf="passwordFormControl.hasError('required')">
+                La contraseña es <strong>REQUERIDA</strong>
+            </mat-error>
+        </mat-form-field>
+
+        <button type="submit" mat-raised-button color="accent" [disabled]="
+        passwordFormControl.hasError('required') ||
+        nameFormControl.hasError('required')
+      ">
+            <mat-icon>exit_to_app</mat-icon>
+            <span>
+                Iniciar sesión
+            </span>
+        </button>
+    </div>
+</form>
+
+    <!-- This page content will be blurred/frosted when loading background overlay is showed -->
+  </div>
+
+<ngx-loading-x [show]="loading">
+</ngx-loading-x>
+
+<!-- <section class="another-action" aria-label="Register">
+    ¿No tienes una cuenta?
+    <a class="text-link" routerLink="../register">Registrate</a>
+</section> -->

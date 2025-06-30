@@ -1,0 +1,187 @@
+<div class="d-flex justify-content-between flex-wrap">
+  <div class="p-2"> 
+
+      <mat-form-field *ngFor="let filter of filterSelectObj" style="margin-left: 15px;">
+        <mat-label>Filtro por {{filter.name}}</mat-label>
+        <select matNativeControl name="{{filter.columnProp}}" [(ngModel)]="filter.modelValue"
+          (change)="filterChange(filter,$event)">
+          <option value="">-- Selecciona la {{filter.name}} --</option>
+          <option [value]="item" *ngFor="let item of filter.options">{{item}}</option>
+        </select>
+      </mat-form-field>
+      &nbsp;
+      <button mat-flat-button color="warn" (click)="resetFilters()">Reset</button>
+ 
+  </div>
+
+  <div class="d-flex justify-content-lg-start flex-wrap" *ngIf="canRenderCambioEstatus()">
+    <div class="p-2">
+      <button mat-raised-button color="accent" matRipple [disabled]="selection.selected.length == 0"
+        (click)="cambiarEstatusMultiple()">
+        <nb-icon icon="calendar-outline"></nb-icon>
+        Cambio de estatus
+      </button>
+    </div>
+  </div>
+
+ 
+
+  <div class="d-flex justify-content-lg-end flex-wrap" *ngIf="canRenderCustomer()">
+    <div class="p-2">
+      <button mat-raised-button color="accent" matRipple [disabled]="selection.selected.length == 0"
+        (click)="solicitarAgenda()">
+        <nb-icon icon="calendar-outline"></nb-icon>
+        Solicitar agenda
+      </button>
+    </div>
+    <div class="p-2">
+      <button mat-raised-button color="primary" matRipple [disabled]="ToBeScheduled.length == 0"
+        (click)="procesarAgenda()">
+        <nb-icon icon="checkmark-square-2-outline"></nb-icon>
+        Confirmar agenda
+      </button>
+    </div>
+    <div class="p-2">
+      <button mat-raised-button color="warn" matRipple [disabled]="ToBeScheduled.length == 0" (click)="limpiarAgenda()">
+        <nb-icon icon="close-square-outline"></nb-icon>
+        Limpiar agenda
+      </button>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-lg-end flex-wrap" *ngIf="canRenderAdmin()">
+    <div class="p-2">
+      <button mat-raised-button color="accent" matRipple [disabled]="selection.selected.length == 0"
+        (click)="aceptarAgenda()">
+        <nb-icon icon="checkmark-square-2-outline"></nb-icon>
+        Aceptar agenda
+      </button>
+    </div>
+    <div class="p-2">
+      <button mat-raised-button color="primary" matRipple [disabled]="selection.selected.length == 0"
+        (click)="rechazarAgenda()">
+        <nb-icon icon="close-square-outline"></nb-icon>
+        Rechazar agenda
+      </button>
+    </div>
+  </div>
+  
+  <div class="d-flex justify-content-lg-end flex-wrap" *ngIf="canRenderDiscarded()">
+    <div class="p-2">
+      <button mat-raised-button color="accent" matRipple [disabled]="selection.selected.length == 0 "
+        (click)="descartarRegistro()">
+        <nb-icon icon="trash-outline"></nb-icon>
+        Descartar
+      </button>
+    </div>
+  </div>
+  
+  <div class="d-flex justify-content-lg-end flex-wrap" *ngIf="canRenderEtiqueta()">
+    <div class="p-2">
+      <button mat-raised-button color="accent" matRipple [disabled]="selection.selected.length == 0"
+        (click)="generarDescargaZip()">
+        <nb-icon icon="file-text-outline"></nb-icon>
+        Generar PDF Multiple
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="mat-elevation-z8">
+
+  <mat-table [dataSource]="dataSource">
+
+    <ng-container matColumnDef="select" *ngIf="canRenderCustomer() || canRenderAdmin() || canRenderCambioEstatus() || isAdmin || canRenderEtiqueta()">
+      <mat-header-cell *matHeaderCellDef>
+        <mat-checkbox (change)="$event ? masterToggle() : null" [checked]="selection.hasValue() && isAllSelected()"
+          [indeterminate]="selection.hasValue() && !isAllSelected()">
+        </mat-checkbox>
+      </mat-header-cell>
+      <td mat-cell *matCellDef="let row">
+        <mat-checkbox (click)="$event.stopPropagation()" (change)="$event ? selection.toggle(row) : null"
+          [checked]="selection.isSelected(row)">
+        </mat-checkbox>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="OrderKey">
+      <mat-header-cell *matHeaderCellDef> Orden </mat-header-cell>
+      <td mat-cell *matCellDef="let element"> {{element.orderkey | uppercase}} </td>
+    </ng-container>
+    <ng-container matColumnDef="Name">
+      <mat-header-cell *matHeaderCellDef> No. Pedido </mat-header-cell>
+      <td mat-cell *matCellDef="let element"> {{element.name}} </td>
+    </ng-container>
+    <ng-container matColumnDef="Email">
+      <mat-header-cell *matHeaderCellDef> Correo </mat-header-cell>
+      <td mat-cell *matCellDef="let element"> {{element.email}} </td>
+    </ng-container>
+    <ng-container matColumnDef="Shipping City">
+      <mat-header-cell *matHeaderCellDef> Comuna </mat-header-cell>
+      <td mat-cell *matCellDef="let element"> {{element.shippingCity}} </td>
+    </ng-container>
+    <ng-container matColumnDef="Shipping Address 1">
+      <mat-header-cell *matHeaderCellDef> Dirección de entrega 1 </mat-header-cell>
+      <td mat-cell *matCellDef="let element"> {{element.shippingAdress1}} </td>
+    </ng-container>
+    <ng-container matColumnDef="Shipping Address 2">
+      <mat-header-cell *matHeaderCellDef> Dirección de entrega 2</mat-header-cell>
+      <td mat-cell *matCellDef="let element"> {{element.shippingAdress2}} </td>
+    </ng-container>
+    <ng-container matColumnDef="Status">
+      <mat-header-cell *matHeaderCellDef> Estatus </mat-header-cell>
+      <td mat-cell *matCellDef="let element"> {{element.descStatus}} </td>
+    </ng-container>
+    <ng-container matColumnDef="CargaDT">
+      <mat-header-cell *matHeaderCellDef> Fecha de carga </mat-header-cell>
+      <td mat-cell *matCellDef="let element"> {{element.cargaDt | date: 'dd/MM/yyyy hh:mm:ss a'}} </td>
+    </ng-container>
+    <ng-container matColumnDef="Scheduled">
+      <mat-header-cell *matHeaderCellDef> Fecha de agenda </mat-header-cell>
+      <td mat-cell *matCellDef="let element"> {{element.scheduledDt | date: 'dd/MM/yyyy hh:mm a'}} </td>
+    </ng-container>
+    <ng-container matColumnDef="Comentario">
+      <mat-header-cell *matHeaderCellDef> Comentario </mat-header-cell>
+      <td mat-cell *matCellDef="let element"> {{element.comment}} </td>
+    </ng-container>
+    <ng-container matColumnDef="Courier">
+      <mat-header-cell *matHeaderCellDef> Courier </mat-header-cell>
+      <td mat-cell *matCellDef="let element"> {{element.courier}} </td>
+    </ng-container>
+    <ng-container matColumnDef="Vendedor">
+      <mat-header-cell *matHeaderCellDef> Vendedor </mat-header-cell>
+      <td mat-cell *matCellDef="let element"> {{element.vendedor}} </td>
+    </ng-container>
+    <ng-container matColumnDef="DeliveryComment" *ngIf="canRenderDeliveryComment()">
+      <mat-header-cell *matHeaderCellDef> Comentario de entrega </mat-header-cell>
+      <td mat-cell *matCellDef="let element"> {{element.deliveryComment}} </td>
+    </ng-container>
+    <ng-container matColumnDef="actions" *ngIf="canRenderEtiqueta()">
+      <mat-header-cell *matHeaderCellDef> Etiqueta </mat-header-cell>
+      <mat-cell *matCellDef="let row">
+        <button mat-button (click)="imprimir(row)" nbTooltip="Descargar etiqueta" nbTooltipStatus="primary">
+          <nb-icon icon="file-text-outline" style="color: red;"></nb-icon>
+        </button>
+      </mat-cell>
+    </ng-container>
+
+    <ng-container matColumnDef="CambioEstatus" *ngIf="canRenderCambioEstatus()">
+      <mat-header-cell *matHeaderCellDef> Cambiar estatus </mat-header-cell>
+
+      <mat-cell *matCellDef="let row" style="text-align: center;">
+        <button mat-button (click)="cambiarEstatus(row)" nbTooltip="Cambiar estatus" nbTooltipStatus="info">
+          <nb-icon icon="flip-2-outline" style="color: rgb(0, 70, 128);"></nb-icon>
+        </button>
+      </mat-cell>
+
+    </ng-container>
+
+    <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+    <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+  </mat-table>
+  <div class="d-flex align-content-center justify-content-center"
+    *ngIf="registros.length === 0 ||  dataSource.filteredData.length  === 0">No se encontraron
+    registros</div>
+  <mat-paginator [pageSizeOptions]="[5, 10, 20, 30, 40, 50, 100]" showFirstLastButtons></mat-paginator>
+
+</div>
