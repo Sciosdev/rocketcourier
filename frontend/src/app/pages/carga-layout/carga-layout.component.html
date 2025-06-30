@@ -1,5 +1,8 @@
 <nb-card>
   <nb-card-body style="padding: 50px;">
+    <button nbButton status="primary" (click)="cargarMisEnvios()" class="mb-4">
+      Cargar mis envíos
+    </button>
     <nb-stepper #stepper disableStepNavigation>
 
       <nb-step label="Carga de archivo">
