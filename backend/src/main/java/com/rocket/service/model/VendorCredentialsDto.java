@@ -4,6 +4,7 @@ public class VendorCredentialsDto {
 
     private String shopifyApiKey;
     private String shopifyAccessToken;
+    private String shopifyStoreUrl;
 
     public String getShopifyApiKey() {
         return shopifyApiKey;
@@ -19,5 +20,13 @@ public class VendorCredentialsDto {
 
     public void setShopifyAccessToken(String shopifyAccessToken) {
         this.shopifyAccessToken = shopifyAccessToken;
+    }
+
+    public String getShopifyStoreUrl() {
+        return shopifyStoreUrl;
+    }
+
+    public void setShopifyStoreUrl(String shopifyStoreUrl) {
+        this.shopifyStoreUrl = shopifyStoreUrl;
     }
 }

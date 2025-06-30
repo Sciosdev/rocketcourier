@@ -10,6 +10,10 @@
         <label for="accessToken" class="label">Access Token</label>
         <input nbInput fullWidth id="accessToken" name="accessToken" [(ngModel)]="accessToken" />
       </div>
+      <div class="form-group">
+        <label for="storeUrl" class="label">Store URL</label>
+        <input nbInput fullWidth id="storeUrl" name="storeUrl" [(ngModel)]="storeUrl" />
+      </div>
       <button nbButton status="primary" type="submit" [disabled]="saving">Guardar</button>
     </form>
   </nb-card-body>

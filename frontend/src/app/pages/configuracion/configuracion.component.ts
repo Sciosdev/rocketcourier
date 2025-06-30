@@ -9,6 +9,7 @@ import { TiendaService } from '../../services/tienda.service';
 export class ConfiguracionComponent implements OnInit {
   apiKey: string = '';
   accessToken: string = '';
+  storeUrl: string = '';
   saving = false;
 
   constructor(private tiendaService: TiendaService) {}
@@ -19,7 +20,8 @@ export class ConfiguracionComponent implements OnInit {
     this.saving = true;
     const cred = {
       shopifyApiKey: this.apiKey,
-      shopifyAccessToken: this.accessToken
+      shopifyAccessToken: this.accessToken,
+      shopifyStoreUrl: this.storeUrl
     };
     // Por simplicidad se asume id 1. En un caso real podría obtenerse de otra fuente
     this.tiendaService.actualizarCredencialesShopify(1, cred).subscribe(
