@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { NbAuthOAuth2JWTToken, NbAuthService } from '@nebular/auth';
+import { NbToastrService } from '@nebular/theme';
 import { TiendaService } from '../../services/tienda.service';
 import { UsuarioService } from 'src/app/services/usuario.service';
 import { UsuarioCompleto } from 'src/app/models/usuario-completo.model';
@@ -19,7 +20,8 @@ export class ConfiguracionComponent implements OnInit {
   constructor(
     private tiendaService: TiendaService,
     private authService: NbAuthService,
-    private usuarioService: UsuarioService
+    private usuarioService: UsuarioService,
+    private toastrService: NbToastrService
   ) {}
 
   ngOnInit(): void {
@@ -51,9 +53,24 @@ export class ConfiguracionComponent implements OnInit {
       shopifyAccessToken: this.accessToken,
       shopifyStoreUrl: this.storeUrl
     };
-    this.tiendaService.actualizarCredencialesShopify(this.vendorId, cred).subscribe(
-      () => (this.saving = false),
-      () => (this.saving = false)
-    );
+    this.tiendaService
+      .actualizarCredencialesShopify(this.vendorId, cred)
+      .subscribe(
+        () => {
+          this.toastrService.success(
+            'Credenciales actualizadas correctamente',
+            'Actualización'
+          );
+          this.saving = false;
+        },
+        (err) => {
+          console.error('Error actualizando credenciales', err);
+          this.toastrService.danger(
+            'No se pudieron actualizar las credenciales',
+            'Actualización'
+          );
+          this.saving = false;
+        }
+      );
   }
 }
