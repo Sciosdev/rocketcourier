@@ -9,7 +9,8 @@ import org.springframework.stereotype.Repository;
 import com.rocket.service.entity.VendorDto;
 
 @Repository
-public interface TiendaRepository extends MongoRepository<VendorDto, String>{	
-	@Query(value = "{ '_id' : ?0}")
-    List<VendorDto> findByIdTienda(String id);
+public interface TiendaRepository extends MongoRepository<VendorDto, Long> {
+
+    @Query(value = "{ '_id' : ?0}")
+    List<VendorDto> findByIdTienda(Long id);
 }

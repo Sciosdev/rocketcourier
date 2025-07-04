@@ -43,7 +43,7 @@ public class EtiquetaPdfService {
 		LoadDto carga = cargaService.obtenerCargaPorId(registro.getIdCarga());
 		UserDto usuario = usuarioService.consulta(carga.getIdVendor()).get(0);
 
-		VendorDto tienda = vendorService.obtenerTiendaPorId(usuario.getTienda());
+                VendorDto tienda = vendorService.obtenerTiendaPorId(usuario.getTienda());
 
 		InputStream resource = new ClassPathResource(templatePath).getInputStream();
 

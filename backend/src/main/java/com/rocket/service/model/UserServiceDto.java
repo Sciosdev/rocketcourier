@@ -11,7 +11,7 @@ public class UserServiceDto {
 	private String name;
 	private String rol;
 	private String password;
-	private Integer tienda;
+        private Long tienda;
 	private String firstName;
 	private String lastName;
 	private String secondLastName;
@@ -104,14 +104,14 @@ public class UserServiceDto {
     /**
      * @return Integer return the tienda
      */
-    public Integer getTienda() {
+    public Long getTienda() {
         return tienda;
     }
 
     /**
      * @param tienda the tienda to set
      */
-    public void setTienda(Integer tienda) {
+    public void setTienda(Long tienda) {
         this.tienda = tienda;
     }
 

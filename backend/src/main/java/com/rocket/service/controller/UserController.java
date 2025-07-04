@@ -58,7 +58,7 @@ public class UserController {
 		}
 
 		UserTableServiceOutDto userServiceOutDto = new UserTableServiceOutDto();
-		VendorDto vendorDto = vendorService.obtenerTiendaPorId(usuario.getTienda());
+                VendorDto vendorDto = vendorService.obtenerTiendaPorId(usuario.getTienda());
 
 		userServiceOutDto = UserMapper.usuarioInDtoVendorDtoToUserServiceOutDto(usuario, vendorDto);
 
@@ -87,8 +87,8 @@ public class UserController {
 	}
 
 	@RequestMapping(value = "/user", method = RequestMethod.GET, produces = { "application/json;charset=UTF-8" })
-	public ResponseEntity<String> getUsers(@RequestParam(name = "rol", required = false) String rol,
-			@RequestParam(name = "tienda", required = false) Integer tienda) {
+        public ResponseEntity<String> getUsers(@RequestParam(name = "rol", required = false) String rol,
+                        @RequestParam(name = "tienda", required = false) Long tienda) {
 
 		List<UserDto> users = new ArrayList<>();
 
@@ -99,7 +99,7 @@ public class UserController {
 		for (UserDto user : users) {
 			if (user.getRol() != null && (!user.getRol().equals(RoleName.ROOT.getValue()))) {
 				UserTableServiceOutDto userServiceOutDto = new UserTableServiceOutDto();
-				VendorDto vendorDto = vendorService.obtenerTiendaPorId(user.getTienda());
+                                VendorDto vendorDto = vendorService.obtenerTiendaPorId(user.getTienda());
 				userServiceOutDto = UserMapper.usuarioInDtoVendorDtoToUserServiceOutDto(user, vendorDto);
 				response.add(userServiceOutDto);
 			}

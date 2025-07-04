@@ -37,9 +37,9 @@ public class VendorController {
 	@Autowired
 	SequenceGeneratorService sequenceGeneratorService;
 
-	@RequestMapping(value = "/vendor/{id}", method = RequestMethod.GET, produces = { "application/json;charset=UTF-8" })
-	public String getPhoto(@PathVariable Integer id) {
-		VendorDto photo = service.obtenerTiendaPorId(id);
+        @RequestMapping(value = "/vendor/{id}", method = RequestMethod.GET, produces = { "application/json;charset=UTF-8" })
+        public String getPhoto(@PathVariable Long id) {
+                VendorDto photo = service.obtenerTiendaPorId(id);
 
 		String image = Base64.getEncoder().encodeToString(photo.getLogo().getData());
 		return image;
@@ -76,7 +76,7 @@ public class VendorController {
         }
 
         @RequestMapping(value = "/vendor/{id}/shopify", method = RequestMethod.GET, produces = { "application/json;charset=UTF-8" })
-        public ResponseEntity<String> obtenerCredencialesShopify(@PathVariable Integer id) {
+        public ResponseEntity<String> obtenerCredencialesShopify(@PathVariable Long id) {
                 VendorDto vendorDto = service.obtenerTiendaPorId(id);
                 VendorCredentialsDto cred = new VendorCredentialsDto();
                 cred.setShopifyApiKey(vendorDto.getShopifyApiKey());
@@ -89,7 +89,7 @@ public class VendorController {
         }
 
         @RequestMapping(value = "/vendor/{id}/shopify", method = RequestMethod.PUT, produces = { "application/json;charset=UTF-8" })
-        public ResponseEntity<String> actualizarCredencialesShopify(@PathVariable Integer id, @RequestBody VendorCredentialsDto cred) {
+        public ResponseEntity<String> actualizarCredencialesShopify(@PathVariable Long id, @RequestBody VendorCredentialsDto cred) {
                 VendorDto vendorDto = service.obtenerTiendaPorId(id);
                 service.actualizarCredencialesShopify(vendorDto, cred.getShopifyApiKey(), cred.getShopifyAccessToken(), cred.getShopifyStoreUrl());
 
@@ -137,19 +137,19 @@ public class VendorController {
 		return new ResponseEntity<>(json, HttpStatus.OK);
 	}
 
-	@RequestMapping(value = "/vendor/{id}", method = RequestMethod.DELETE, produces = {
-			"application/json;charset=UTF-8" })
-	public ResponseEntity<String> eliminarTienda(@PathVariable Integer id) {
-		VendorDto vendorDto = service.obtenerTiendaPorId(id);
+        @RequestMapping(value = "/vendor/{id}", method = RequestMethod.DELETE, produces = {
+                        "application/json;charset=UTF-8" })
+        public ResponseEntity<String> eliminarTienda(@PathVariable Long id) {
+                VendorDto vendorDto = service.obtenerTiendaPorId(id);
 
 		VendorDto response = service.setActivo(vendorDto, false);
 
 		List<UserDto> usuarios = userService.consultaUsuarioPorTienda(id);
 
-		usuarios.forEach(usuario -> {
-			usuario.setTienda(0);
-			userService.guardarUsuario(usuario);
-		});
+                usuarios.forEach(usuario -> {
+                        usuario.setTienda(0L);
+                        userService.guardarUsuario(usuario);
+                });
 
 		Gson gson = new Gson();
 		String json;
