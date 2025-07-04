@@ -133,9 +133,9 @@ public class UsuarioService {
 		repoUser.deleteById(user.getId());
 	}
 
-	public List<UserDto> consultaUsuarioPorTienda(Integer idTienda) {
-		List<UserDto> usuarios = mongoOperations
-				.find(Query.query(Criteria.where("tienda").is(idTienda).and("activo").is(true)), UserDto.class);
-		return usuarios;
-	}
+        public List<UserDto> consultaUsuarioPorTienda(Long idTienda) {
+                List<UserDto> usuarios = mongoOperations
+                                .find(Query.query(Criteria.where("tienda").is(idTienda).and("activo").is(true)), UserDto.class);
+                return usuarios;
+        }
 }

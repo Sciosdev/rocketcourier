@@ -47,7 +47,7 @@ public class ShopifyController {
             if (usuario == null) {
                 return ResponseEntity.badRequest().body(gson.toJson(new DBResponse(false, "Usuario no encontrado")));
             }
-            VendorDto vendor = vendorService.obtenerTiendaPorId(usuario.getTienda());
+            VendorDto vendor = vendorService.obtenerTiendaPorId(usuario.getTienda() != null ? usuario.getTienda().longValue() : null);
             if (vendor == null || vendor.getShopifyAccessToken() == null || vendor.getSitio() == null) {
                 return ResponseEntity.badRequest().body(gson.toJson(new DBResponse(false, "Credenciales no configuradas")));
             }

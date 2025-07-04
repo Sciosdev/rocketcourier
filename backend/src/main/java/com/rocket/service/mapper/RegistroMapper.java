@@ -22,7 +22,7 @@ public class RegistroMapper {
 
 		if (!result.isEmpty()) {
 			vendedor = result.get(0);
-			VendorDto tienda = vendorService.obtenerTiendaPorId(vendedor.getTienda());
+                        VendorDto tienda = vendorService.obtenerTiendaPorId(vendedor.getTienda() != null ? vendedor.getTienda().longValue() : null);
 			nombreTienda = tienda.getNombreTienda();
 		}
 
