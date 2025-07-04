@@ -23,3 +23,7 @@ security:
    oauth2:
       resource:
          filter-order: 3
+
+server:
+  servlet:
+    context-path: /rocket
