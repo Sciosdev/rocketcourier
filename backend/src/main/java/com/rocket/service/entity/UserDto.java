@@ -19,7 +19,7 @@ public class UserDto {
 	private String name;
 	private String rol;
 	private String password;
-	private Integer tienda;
+        private Long tienda;
 	private String firstName;
 	private String lastName;
 	private String secondLastName;
@@ -87,13 +87,13 @@ public class UserDto {
 		this.lastLogin = lastLogin;
 	}
 
-	public Integer getTienda() {
-		return tienda;
-	}
+        public Long getTienda() {
+                return tienda;
+        }
 
-	public void setTienda(Integer tienda) {
-		this.tienda = tienda;
-	}
+        public void setTienda(Long tienda) {
+                this.tienda = tienda;
+        }
 
 	public String getFirstName() {
 		return firstName;

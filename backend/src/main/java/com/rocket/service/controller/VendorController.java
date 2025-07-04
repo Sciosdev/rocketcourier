@@ -146,10 +146,10 @@ public class VendorController {
 
 		List<UserDto> usuarios = userService.consultaUsuarioPorTienda(id);
 
-		usuarios.forEach(usuario -> {
-			usuario.setTienda(0);
-			userService.guardarUsuario(usuario);
-		});
+                usuarios.forEach(usuario -> {
+                        usuario.setTienda(0L);
+                        userService.guardarUsuario(usuario);
+                });
 
 		Gson gson = new Gson();
 		String json;

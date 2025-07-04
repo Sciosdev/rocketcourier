@@ -80,7 +80,7 @@ public class UsuarioService {
 		return resultActivos;
 	}
 
-	public List<UserDto> consultaUsuarios(String rol, Integer tienda) {
+        public List<UserDto> consultaUsuarios(String rol, Long tienda) {
 
 		List<UserDto> usuarios = new ArrayList<>();
 
