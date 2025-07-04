@@ -43,7 +43,7 @@ public class ShopifyController {
     public ResponseEntity<String> obtenerOrders(@PathVariable String user) {
         Gson gson = new Gson();
         try {
-            var usuario = usuarioService.obtenerUsuario(user);
+            UserDto usuario = usuarioService.obtenerUsuario(user);
             if (usuario == null) {
                 return ResponseEntity.badRequest().body(gson.toJson(new DBResponse(false, "Usuario no encontrado")));
             }
