@@ -13,6 +13,7 @@ import com.rocket.service.entity.Billing_addressDto;
 import com.rocket.service.entity.OrderDto;
 import com.rocket.service.entity.RegistryDto;
 import com.rocket.service.entity.Shipping_addressDto;
+import com.rocket.service.entity.UserDto;
 import com.rocket.service.entity.VendorDto;
 import com.rocket.service.model.DBResponse;
 import com.rocket.service.model.RegistroServiceInDto;
@@ -43,7 +44,7 @@ public class ShopifyController {
     public ResponseEntity<String> obtenerOrders(@PathVariable String user) {
         Gson gson = new Gson();
         try {
-            var usuario = usuarioService.obtenerUsuario(user);
+            UserDto  usuario = usuarioService.obtenerUsuario(user);
             if (usuario == null) {
                 return ResponseEntity.badRequest().body(gson.toJson(new DBResponse(false, "Usuario no encontrado")));
             }
