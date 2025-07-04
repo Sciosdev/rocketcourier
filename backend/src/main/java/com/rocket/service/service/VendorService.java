@@ -39,9 +39,9 @@ public class VendorService {
 		return vendorRepository.save(tienda);
 	}
 	
-	public VendorDto obtenerTiendaPorId(Integer id) {
+        public VendorDto obtenerTiendaPorId(Long id) {
 
-		List<VendorDto> tiendas = mongoOperations.find(Query.query(Criteria.where("_id").is(id)), VendorDto.class);
+                List<VendorDto> tiendas = mongoOperations.find(Query.query(Criteria.where("_id").is(id)), VendorDto.class);
 
 		if (tiendas.isEmpty()) {
 			return new VendorDto();
