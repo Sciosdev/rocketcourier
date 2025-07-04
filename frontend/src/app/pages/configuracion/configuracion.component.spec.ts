@@ -10,11 +10,20 @@ class TiendaServiceStub {
   actualizarCredencialesShopify() {
     return of({});
   }
+  obtenerCredencialesShopify() {
+    return of({});
+  }
 }
 
 class ToastrServiceStub {
   success(message?: string, title?: string) {}
   danger(message?: string, title?: string) {}
+}
+
+class UsuarioServiceStub {
+  obtenerUsuarioCompleto() {
+    return of({ tienda: 1 });
+  }
 }
 
 describe('ConfiguracionComponent', () => {
@@ -26,6 +35,7 @@ describe('ConfiguracionComponent', () => {
   beforeEach(async () => {
     tiendaService = new TiendaServiceStub();
     toastrService = new ToastrServiceStub();
+    const usuarioService = new UsuarioServiceStub();
 
     await TestBed.configureTestingModule({
       declarations: [ConfiguracionComponent],
@@ -35,7 +45,7 @@ describe('ConfiguracionComponent', () => {
           provide: NbAuthService,
           useValue: { getToken: () => of({ isValid: () => false }) },
         },
-        { provide: UsuarioService, useValue: {} },
+        { provide: UsuarioService, useValue: usuarioService },
         { provide: NbToastrService, useValue: toastrService },
       ],
     }).compileComponents();
@@ -68,5 +78,30 @@ describe('ConfiguracionComponent', () => {
     expect(toastSpy).toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalled();
     expect(component.saving).toBeFalse();
+  });
+
+  it('should load credentials on init', () => {
+    const authService = TestBed.inject(NbAuthService);
+    const usuarioService = TestBed.inject(UsuarioService);
+    spyOn(authService, 'getToken').and.returnValue(
+      of({
+        isValid: () => true,
+        getAccessTokenPayload: () => ({ user_name: 'test' }),
+      } as any)
+    );
+    spyOn(usuarioService, 'obtenerUsuarioCompleto').and.returnValue(of({ tienda: 2 }));
+    const cred = {
+      shopifyApiKey: 'key',
+      shopifyAccessToken: 'token',
+      shopifyStoreUrl: 'url',
+    };
+    const credSpy = spyOn(tiendaService, 'obtenerCredencialesShopify').and.returnValue(of(cred));
+
+    component.ngOnInit();
+
+    expect(credSpy).toHaveBeenCalledWith(2);
+    expect(component.apiKey).toBe('key');
+    expect(component.accessToken).toBe('token');
+    expect(component.storeUrl).toBe('url');
   });
 });
