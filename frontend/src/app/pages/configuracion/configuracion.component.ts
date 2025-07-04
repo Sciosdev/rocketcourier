@@ -32,6 +32,23 @@ export class ConfiguracionComponent implements OnInit {
         this.usuarioService.obtenerUsuarioCompleto(username).subscribe(
           (user: UsuarioCompleto) => {
             this.vendorId = user.tienda;
+            if (this.vendorId) {
+              this.tiendaService
+                .obtenerCredencialesShopify(this.vendorId)
+                .subscribe(
+                  (cred: any) => {
+                    this.apiKey = cred.shopifyApiKey || '';
+                    this.accessToken = cred.shopifyAccessToken || '';
+                    this.storeUrl = cred.shopifyStoreUrl || '';
+                  },
+                  (err) => {
+                    console.error(
+                      'Error obteniendo credenciales de Shopify',
+                      err
+                    );
+                  }
+                );
+            }
           },
           (err) => {
             console.error('No se pudo obtener el ID de la tienda', err);
