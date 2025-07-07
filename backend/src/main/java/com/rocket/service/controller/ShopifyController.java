@@ -58,14 +58,14 @@ public class ShopifyController {
                 return ResponseEntity.badRequest().body(gson.toJson(new DBResponse(false, "Usuario no encontrado")));
             }
             VendorDto vendor = vendorService.obtenerTiendaPorId(usuario.getTienda() != null ? usuario.getTienda().longValue() : null);
-            if (vendor == null || vendor.getShopifyAccessToken() == null || vendor.getSitio() == null) {
+            if (vendor == null || vendor.getShopifyAccessToken() == null || vendor.getShopifyStoreUrl() == null) {
                 return ResponseEntity.badRequest().body(gson.toJson(new DBResponse(false, "Credenciales no configuradas")));
             }
 
             RestTemplate rest = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
             headers.add("X-Shopify-Access-Token", vendor.getShopifyAccessToken());
-            String url = "https://" + vendor.getSitio() + "/admin/api/2023-07/orders.json";
+            String url = "https://" + vendor.getShopifyStoreUrl() + "/admin/api/2023-07/orders.json";
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url);
 
             if (createdAtMin != null && !createdAtMin.trim().isEmpty()) {
