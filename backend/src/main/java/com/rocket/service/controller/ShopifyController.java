@@ -45,8 +45,11 @@ public class ShopifyController {
     @RequestMapping(value = "/shopify/orders/{user}", method = RequestMethod.GET, produces = { "application/json;charset=UTF-8" })
     public ResponseEntity<String> obtenerOrders(
             @PathVariable String user,
-            @RequestParam(value = "created_at_min", required = false) String createdAtMin,
-            @RequestParam(value = "created_at_max", required = false) String createdAtMax) {
+ pe6poj-codex/verificar-comportamiento-botón-continuar-en-/carga-layout
+            @RequestParam(value = "created_at_min", required = false) String createdAtMin) {
+
+            @RequestParam(required = false) String created_at_min) {
+ main
         Gson gson = new Gson();
         try {
 
@@ -65,11 +68,14 @@ public class ShopifyController {
             headers.add("X-Shopify-Access-Token", vendor.getShopifyAccessToken());
             String url = "https://" + vendor.getSitio() + "/admin/api/2023-07/orders.json";
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url);
-            if (createdAtMin != null) {
-                builder.queryParam("created_at_min", createdAtMin);
+ pe6poj-codex/verificar-comportamiento-botón-continuar-en-/carga-layout
+            
+            if (created_at_min != null) {
+                builder.queryParam("created_at_min", created_at_min);
             }
-            if (createdAtMax != null) {
-                builder.queryParam("created_at_max", createdAtMax);
+            if (created_at_max != null) {
+                builder.queryParam("created_at_max", created_at_max);
+ main
             }
             ResponseEntity<String> resp = rest.exchange(
                     builder.toUriString(),

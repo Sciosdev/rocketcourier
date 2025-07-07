@@ -15,6 +15,7 @@ export class ShopifyService {
     created_at_min?: string,
     created_at_max?: string
   ) {
+ pe6poj-codex/verificar-comportamiento-botón-continuar-en-/carga-layout
     const url = this.URL_SERVICIOS + '/shopify/orders/' + vendor;
     let params = new HttpParams();
     if (created_at_min) {
@@ -24,6 +25,8 @@ export class ShopifyService {
       params = params.set('created_at_max', created_at_max);
     }
     const options = { headers: this.getHeaders(), params };
+
+ main
     return this.http.get(url, options);
   }
 
