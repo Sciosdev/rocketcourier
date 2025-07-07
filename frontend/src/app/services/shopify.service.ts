@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
 
@@ -15,18 +15,15 @@ export class ShopifyService {
     created_at_min?: string,
     created_at_max?: string
   ) {
-    let url = this.URL_SERVICIOS + '/shopify/orders/' + vendor;
-    const params = [] as string[];
+    const url = this.URL_SERVICIOS + '/shopify/orders/' + vendor;
+    let params = new HttpParams();
     if (created_at_min) {
-      params.push('created_at_min=' + encodeURIComponent(created_at_min));
+      params = params.set('created_at_min', created_at_min);
     }
     if (created_at_max) {
-      params.push('created_at_max=' + encodeURIComponent(created_at_max));
+      params = params.set('created_at_max', created_at_max);
     }
-    if (params.length) {
-      url += '?' + params.join('&');
-    }
-    const options = { headers: this.getHeaders() };
+    const options = { headers: this.getHeaders(), params };
     return this.http.get(url, options);
   }
 
