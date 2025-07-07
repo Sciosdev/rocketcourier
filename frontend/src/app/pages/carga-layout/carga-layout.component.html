@@ -1,5 +1,13 @@
 <nb-card>
   <nb-card-body style="padding: 50px;">
+    <div class="row mb-3">
+      <div class="col">
+        <input nbInput type="date" placeholder="Fecha inicio" [(ngModel)]="fechaInicio" />
+      </div>
+      <div class="col">
+        <input nbInput type="date" placeholder="Fecha fin" [(ngModel)]="fechaFin" />
+      </div>
+    </div>
     <button nbButton status="primary" (click)="cargarMisEnvios()" class="mb-4">
       Cargar mis envíos
     </button>
