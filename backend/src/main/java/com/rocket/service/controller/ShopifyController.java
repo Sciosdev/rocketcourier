@@ -28,8 +28,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 public class ShopifyController {
@@ -41,7 +43,10 @@ public class ShopifyController {
     UsuarioService usuarioService;
 
     @RequestMapping(value = "/shopify/orders/{user}", method = RequestMethod.GET, produces = { "application/json;charset=UTF-8" })
-    public ResponseEntity<String> obtenerOrders(@PathVariable String user) {
+    public ResponseEntity<String> obtenerOrders(
+            @PathVariable String user,
+            @RequestParam(value = "created_at_min", required = false) String createdAtMin,
+            @RequestParam(value = "created_at_max", required = false) String createdAtMax) {
         Gson gson = new Gson();
         try {
 
@@ -58,8 +63,16 @@ public class ShopifyController {
             RestTemplate rest = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
             headers.add("X-Shopify-Access-Token", vendor.getShopifyAccessToken());
+            String url = "https://" + vendor.getSitio() + "/admin/api/2023-07/orders.json";
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url);
+            if (createdAtMin != null) {
+                builder.queryParam("created_at_min", createdAtMin);
+            }
+            if (createdAtMax != null) {
+                builder.queryParam("created_at_max", createdAtMax);
+            }
             ResponseEntity<String> resp = rest.exchange(
-                    "https://" + vendor.getSitio() + "/admin/api/2023-07/orders.json",
+                    builder.toUriString(),
                     HttpMethod.GET,
                     new HttpEntity<>(headers),
                     String.class);
