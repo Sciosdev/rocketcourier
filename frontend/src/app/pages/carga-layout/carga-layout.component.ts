@@ -65,10 +65,12 @@ export class CargaLayoutComponent implements OnInit {
     const vendor = this.user.user_name || this.user;
     const inicio = this.fechaInicio ? new Date(this.fechaInicio).toISOString() : undefined;
     const fin = this.fechaFin ? new Date(this.fechaFin).toISOString() : undefined;
+
     // Move the wizard to the preview step before sending the request
     if (this.stepper) {
       this.stepper.selectedIndex = 1;
     }
+
     this.shopifyService.obtenerOrders(vendor, inicio, fin).subscribe((data: any) => {
       if (this.previsualizacion) {
         this.previsualizacion.registerTest(JSON.stringify(data));
