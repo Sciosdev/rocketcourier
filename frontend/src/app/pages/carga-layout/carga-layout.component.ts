@@ -15,6 +15,9 @@ export class CargaLayoutComponent implements OnInit {
 
   user: any;
 
+  fechaInicio: string;
+  fechaFin: string;
+
   constructor(private shopifyService: ShopifyService, private authService: NbAuthService) { }
 
   ngOnInit(): void {
@@ -56,7 +59,9 @@ export class CargaLayoutComponent implements OnInit {
       return;
     }
     const vendor = this.user.user_name || this.user;
-    this.shopifyService.obtenerOrders(vendor).subscribe((data: any) => {
+    const inicio = this.fechaInicio ? new Date(this.fechaInicio).toISOString() : undefined;
+    const fin = this.fechaFin ? new Date(this.fechaFin).toISOString() : undefined;
+    this.shopifyService.obtenerOrders(vendor, inicio, fin).subscribe((data: any) => {
       if (this.previsualizacion) {
         this.previsualizacion.registerTest(JSON.stringify(data));
       }
