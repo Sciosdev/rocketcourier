@@ -32,8 +32,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
+@Slf4j
 public class ShopifyController {
 
     @Autowired
@@ -95,7 +97,13 @@ public class ShopifyController {
                 order.setSource("SHOPIFY");
                 order.setCurrency(o.get("currency").getAsString());
                 order.setSubtotal(o.get("subtotal_price").getAsDouble());
-                order.setShipping(o.get("total_shipping_price_set").getAsJsonObject().get("shop_money").getAsJsonObject().get("amount").getAsDouble());
+                double shipping = 0.0;
+                if (o.has("total_shipping_price_set") && !o.get("total_shipping_price_set").isJsonNull()) {
+                    shipping = o.getAsJsonObject("total_shipping_price_set")
+                                    .getAsJsonObject("shop_money")
+                                    .get("amount").getAsDouble();
+                }
+                order.setShipping(shipping);
                 order.setShipping_method("");
                 order.setCreated_at(new Date());
                 reg.setOrder(order);
@@ -141,6 +149,7 @@ public class ShopifyController {
             dto.setTipoCarga(0);
             return ResponseEntity.ok(gson.toJson(dto));
         } catch (Exception e) {
+            log.error(e.getMessage());
             return ResponseEntity.internalServerError().body(gson.toJson(new DBResponse(false, "Error consultando Shopify")));
         }
     }
