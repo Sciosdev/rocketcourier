@@ -65,7 +65,8 @@ public class ShopifyController {
             RestTemplate rest = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
             headers.add("X-Shopify-Access-Token", vendor.getShopifyAccessToken());
-            String url = "https://" + vendor.getShopifyStoreUrl() + "/admin/api/2025-07/orders.json";
+            // Changed API version from 2025-07 to 2024-04 (a supported stable version)
+            String url = "https://" + vendor.getShopifyStoreUrl() + "/admin/api/2024-04/orders.json";
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url);
 
             if (createdAtMin != null && !createdAtMin.trim().isEmpty()) {
