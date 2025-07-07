@@ -65,6 +65,7 @@ public class ShopifyController {
             headers.add("X-Shopify-Access-Token", vendor.getShopifyAccessToken());
             String url = "https://" + vendor.getSitio() + "/admin/api/2023-07/orders.json";
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url);
+
             if (createdAtMin != null && !createdAtMin.isBlank()) {
                 builder.queryParam("created_at_min", createdAtMin);
             }
