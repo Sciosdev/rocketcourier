@@ -62,20 +62,55 @@ public class ShopifyController {
                 return ResponseEntity.badRequest().body(gson.toJson(new DBResponse(false, "Credenciales no configuradas")));
             }
 
+            String shopifyApiVersion = "2024-04"; // Stable API version
+            String rawShopifyStoreUrl = vendor.getShopifyStoreUrl();
+            String shopifyAccessToken = vendor.getShopifyAccessToken();
+
+            log.info("Shopify API Call Details for user: {}", user);
+            log.info("Raw Shopify Store URL from DB: '{}'", rawShopifyStoreUrl);
+            // Avoid logging full token in production if possible, or mask it. For debug:
+            log.info("Shopify Access Token (first 10 chars): '{}...'", shopifyAccessToken != null && shopifyAccessToken.length() > 10 ? shopifyAccessToken.substring(0, 10) : "TOKEN_TOO_SHORT_OR_NULL");
+            log.info("Attempting to use Shopify API Version: {}", shopifyApiVersion);
+            log.info("Received createdAtMin: '{}', createdAtMax: '{}'", createdAtMin, createdAtMax);
+
+            // Normalize the store URL: ensure it starts with https:// and does not end with a slash before appending API path
+            String normalizedStoreUrl = rawShopifyStoreUrl;
+            if (normalizedStoreUrl == null || normalizedStoreUrl.trim().isEmpty()) {
+                log.error("Shopify Store URL is null or empty for vendor linked to user: {}", user);
+                return ResponseEntity.badRequest().body(gson.toJson(new DBResponse(false, "URL de tienda Shopify no configurada")));
+            }
+
+            if (!normalizedStoreUrl.startsWith("https://") && !normalizedStoreUrl.startsWith("http://")) {
+                normalizedStoreUrl = "https://" + normalizedStoreUrl;
+            } else if (normalizedStoreUrl.startsWith("http://")) {
+                // Optionally upgrade http to https, or log a warning.
+                log.warn("Shopify Store URL starts with http://, forcing https:// for user: {}", user);
+                normalizedStoreUrl = "https://" + normalizedStoreUrl.substring(7);
+            }
+            
+            // Remove trailing slash if present, to prevent double slashes when appending path
+            if (normalizedStoreUrl.endsWith("/")) {
+                normalizedStoreUrl = normalizedStoreUrl.substring(0, normalizedStoreUrl.length() - 1);
+            }
+
+            String finalShopifyApiUrl = normalizedStoreUrl + "/admin/api/" + shopifyApiVersion + "/orders.json";
+            log.info("Final constructed Shopify API URL: '{}'", finalShopifyApiUrl);
+
             RestTemplate rest = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
-            headers.add("X-Shopify-Access-Token", vendor.getShopifyAccessToken());
-            // Changed API version from 2025-07 to 2024-04 (a supported stable version)
-            String url = "https://" + vendor.getShopifyStoreUrl() + "/admin/api/2024-04/orders.json";
-            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url);
+            headers.add("X-Shopify-Access-Token", shopifyAccessToken);
+            
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(finalShopifyApiUrl);
 
             if (createdAtMin != null && !createdAtMin.trim().isEmpty()) {
                 builder.queryParam("created_at_min", createdAtMin);
             }
             if (createdAtMax != null && !createdAtMax.trim().isEmpty()) {
-
                 builder.queryParam("created_at_max", createdAtMax);
             }
+            
+            log.info("Full request URL with params: {}", builder.toUriString());
+
             ResponseEntity<String> resp = rest.exchange(
                     builder.toUriString(),
                     HttpMethod.GET,
@@ -91,37 +126,43 @@ public class ShopifyController {
                 OrderDto order = new OrderDto();
                 order.setId(o.get("id").getAsString());
                 order.setName(o.get("name").getAsString());
-                order.setEmail(o.get("email").getAsString());
-                order.setFinancial_status(o.get("financial_status").getAsString());
+                // Safely get optional fields
+                order.setEmail(o.has("email") && !o.get("email").isJsonNull() ? o.get("email").getAsString() : "");
+                order.setFinancial_status(o.has("financial_status") && !o.get("financial_status").isJsonNull() ? o.get("financial_status").getAsString() : "");
                 order.setVendor(user);
                 order.setRisk_level("N/A");
                 order.setSource("SHOPIFY");
-                order.setCurrency(o.get("currency").getAsString());
-                order.setSubtotal(o.get("subtotal_price").getAsDouble());
+                order.setCurrency(o.has("currency") && !o.get("currency").isJsonNull() ? o.get("currency").getAsString() : "");
+                order.setSubtotal(o.has("subtotal_price") && !o.get("subtotal_price").isJsonNull() ? o.get("subtotal_price").getAsDouble() : 0.0);
+                
                 double shipping = 0.0;
                 if (o.has("total_shipping_price_set") && !o.get("total_shipping_price_set").isJsonNull()) {
-                    shipping = o.getAsJsonObject("total_shipping_price_set")
-                                    .getAsJsonObject("shop_money")
-                                    .get("amount").getAsDouble();
+                    JsonObject totalShippingPriceSet = o.getAsJsonObject("total_shipping_price_set");
+                    if (totalShippingPriceSet.has("shop_money") && !totalShippingPriceSet.get("shop_money").isJsonNull()) {
+                        JsonObject shopMoney = totalShippingPriceSet.getAsJsonObject("shop_money");
+                        if (shopMoney.has("amount") && !shopMoney.get("amount").isJsonNull()) {
+                             shipping = shopMoney.get("amount").getAsDouble();
+                        }
+                    }
                 }
                 order.setShipping(shipping);
-                order.setShipping_method("");
-                order.setCreated_at(new Date());
+                order.setShipping_method(""); // Consider if this can be fetched
+                order.setCreated_at(new Date()); // This sets the creation date in *your* system, not from Shopify order
                 reg.setOrder(order);
 
                 if (o.has("shipping_address") && !o.get("shipping_address").isJsonNull()) {
                     JsonObject sa = o.getAsJsonObject("shipping_address");
                     Shipping_addressDto ship = new Shipping_addressDto();
-                    ship.setName(sa.get("name").getAsString());
-                    ship.setStreet(sa.get("address1").getAsString());
-                    ship.setAddress1(sa.get("address1").getAsString());
+                    ship.setName(sa.has("name") && !sa.get("name").isJsonNull() ? sa.get("name").getAsString() : "");
+                    ship.setStreet(sa.has("address1") && !sa.get("address1").isJsonNull() ? sa.get("address1").getAsString() : "");
+                    ship.setAddress1(sa.has("address1") && !sa.get("address1").isJsonNull() ? sa.get("address1").getAsString() : "");
                     ship.setAddress2(sa.has("address2") && !sa.get("address2").isJsonNull() ? sa.get("address2").getAsString() : "");
                     ship.setCompany(sa.has("company") && !sa.get("company").isJsonNull() ? sa.get("company").getAsString() : "");
-                    ship.setCity(sa.get("city").getAsString());
-                    ship.setZip(sa.get("zip").getAsString());
+                    ship.setCity(sa.has("city") && !sa.get("city").isJsonNull() ? sa.get("city").getAsString() : "");
+                    ship.setZip(sa.has("zip") && !sa.get("zip").isJsonNull() ? sa.get("zip").getAsString() : "");
                     ship.setProvince(sa.has("province") && !sa.get("province").isJsonNull() ? sa.get("province").getAsString() : "");
                     ship.setProvince_name(ship.getProvince());
-                    ship.setCountry(sa.get("country").getAsString());
+                    ship.setCountry(sa.has("country") && !sa.get("country").isJsonNull() ? sa.get("country").getAsString() : "");
                     ship.setPhone(sa.has("phone") && !sa.get("phone").isJsonNull() ? sa.get("phone").getAsString() : "");
                     reg.setShipping_address(ship);
                 }
@@ -129,16 +170,16 @@ public class ShopifyController {
                 if (o.has("billing_address") && !o.get("billing_address").isJsonNull()) {
                     JsonObject ba = o.getAsJsonObject("billing_address");
                     Billing_addressDto bill = new Billing_addressDto();
-                    bill.setName(ba.get("name").getAsString());
-                    bill.setStreet(ba.get("address1").getAsString());
-                    bill.setAddress1(ba.get("address1").getAsString());
+                    bill.setName(ba.has("name") && !ba.get("name").isJsonNull() ? ba.get("name").getAsString() : "");
+                    bill.setStreet(ba.has("address1") && !ba.get("address1").isJsonNull() ? ba.get("address1").getAsString() : "");
+                    bill.setAddress1(ba.has("address1") && !ba.get("address1").isJsonNull() ? ba.get("address1").getAsString() : "");
                     bill.setAddress2(ba.has("address2") && !ba.get("address2").isJsonNull() ? ba.get("address2").getAsString() : "");
                     bill.setCompany(ba.has("company") && !ba.get("company").isJsonNull() ? ba.get("company").getAsString() : "");
-                    bill.setCity(ba.get("city").getAsString());
-                    bill.setZip(ba.get("zip").getAsString());
+                    bill.setCity(ba.has("city") && !ba.get("city").isJsonNull() ? ba.get("city").getAsString() : "");
+                    bill.setZip(ba.has("zip") && !ba.get("zip").isJsonNull() ? ba.get("zip").getAsString() : "");
                     bill.setProvince(ba.has("province") && !ba.get("province").isJsonNull() ? ba.get("province").getAsString() : "");
                     bill.setProvince_name(bill.getProvince());
-                    bill.setCountry(ba.get("country").getAsString());
+                    bill.setCountry(ba.has("country") && !ba.get("country").isJsonNull() ? ba.get("country").getAsString() : "");
                     bill.setPhone(ba.has("phone") && !ba.get("phone").isJsonNull() ? ba.get("phone").getAsString() : "");
                     reg.setBilling_address(bill);
                 }
@@ -147,10 +188,10 @@ public class ShopifyController {
             RegistroServiceInDto dto = new RegistroServiceInDto();
             dto.setRegistro(registros);
             dto.setIdVendor(user);
-            dto.setTipoCarga(0);
+            dto.setTipoCarga(0); // Consider if this should be dynamic or configurable
             return ResponseEntity.ok(gson.toJson(dto));
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("Error al consultar Shopify para usuario: {}. Fechas: min={}, max={}. Excepción: ", user, createdAtMin, createdAtMax, e);
             return ResponseEntity.internalServerError().body(gson.toJson(new DBResponse(false, "Error consultando Shopify")));
         }
     }
