@@ -41,6 +41,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap; // Para el Map de respuesta
+import java.util.Map; // Para el Map de respuesta
 
 @RestController
 @Slf4j
@@ -62,6 +64,9 @@ public class ShopifyController {
             .setPrettyPrinting()
             .disableHtmlEscaping()
             .create();
+
+        Map<String, Object> responseMap = new HashMap<>(); // Mapa para la respuesta final
+
         try {
             log.info("Iniciando obtenerOrders para usuario: {} con created_at_min: {} y created_at_max: {}", user, createdAtMin, createdAtMax);
 
@@ -141,16 +146,26 @@ public class ShopifyController {
             }
 
             log.info("Shopify API Response Status: {}", resp.getStatusCode());
-            log.info("Shopify API Response Body: {}", resp.getBody());
+            // log.info("Shopify API Response Body: {}", resp.getBody()); // Loguear el cuerpo completo puede ser muy verboso
 
             JsonObject obj = JsonParser.parseString(resp.getBody()).getAsJsonObject();
             JsonArray ordersArray = obj.getAsJsonArray("orders");
             List<RegistryDto> registros = new ArrayList<>();
+            String debugShopifyResponseData = "No orders found or error parsing orders.";
 
             if (ordersArray == null) {
                 log.warn("La respuesta de Shopify no contiene el array 'orders' o es nulo.");
+                debugShopifyResponseData = "Shopify response does not contain 'orders' array or it is null.";
             } else {
                 log.info("Número de pedidos recibidos de Shopify: {}", ordersArray.size());
+                if (ordersArray.size() > 0) {
+                    // Para depuración, tomamos el primer pedido como ejemplo
+                    JsonObject firstOrderJson = ordersArray.get(0).getAsJsonObject();
+                    debugShopifyResponseData = "First order raw: " + gson.toJson(firstOrderJson);
+                } else {
+                    debugShopifyResponseData = "Shopify returned 0 orders.";
+                }
+
                 for (JsonElement element : ordersArray) {
                     JsonObject o = element.getAsJsonObject();
                     RegistryDto reg = new RegistryDto();
@@ -219,7 +234,7 @@ public class ShopifyController {
                         ship.setPhone(sa.has("phone") && !sa.get("phone").isJsonNull() ? sa.get("phone").getAsString() : "");
                         reg.setShipping_address(ship);
                     } else {
-                        log.warn("Pedido {} no tiene shipping_address. Se creará uno vacío.", order.getId());
+                        log.warn("Pedido {} no tiene shipping_address. Se creará uno vacío.", order.getId() != null ? order.getId() : "ID no disponible");
                         reg.setShipping_address(new Shipping_addressDto());
                     }
 
@@ -239,13 +254,9 @@ public class ShopifyController {
                         bill.setPhone(ba.has("phone") && !ba.get("phone").isJsonNull() ? ba.get("phone").getAsString() : "");
                         reg.setBilling_address(bill);
                     } else {
-                        log.warn("Pedido {} no tiene billing_address. Se creará uno vacío.", order.getId());
+                        log.warn("Pedido {} no tiene billing_address. Se creará uno vacío.", order.getId() != null ? order.getId() : "ID no disponible");
                         reg.setBilling_address(new Billing_addressDto());
                     }
-                    // El campo rowNumber no viene de Shopify, se usa para CSV.
-                    // No es necesario establecerlo aquí a menos que quieras un identificador temporal.
-                    // reg.setRowNumber(...);
-
                     registros.add(reg);
                 }
             }
@@ -254,12 +265,17 @@ public class ShopifyController {
             dto.setRegistro(registros);
             dto.setIdVendor(user);
             dto.setTipoCarga(0);
-            log.info("Devolviendo {} registros al frontend para el usuario {}. Payload: {}", registros.size(), user, gson.toJson(dto));
-            return ResponseEntity.ok(gson.toJson(dto));
+
+            responseMap.put("payload", dto);
+            responseMap.put("debugShopifyResponse", debugShopifyResponseData);
+
+            log.info("Devolviendo {} registros al frontend para el usuario {}.", registros.size(), user);
+            return ResponseEntity.ok(gson.toJson(responseMap));
 
         } catch (Exception e) {
             log.error("Error general en obtenerOrders para usuario: {}. Fechas: min={}, max={}. Excepción: ", user, createdAtMin, createdAtMax, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(gson.toJson(new DBResponse(false, "Error interno del servidor al consultar Shopify: " + e.getMessage())));
+            responseMap.put("error", "Error interno del servidor al consultar Shopify: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(gson.toJson(responseMap));
         }
     }
 }
