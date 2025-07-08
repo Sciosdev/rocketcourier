@@ -67,8 +67,7 @@ public class VendorService {
                 return vendorRepository.save(tienda);
         }
 
-        public VendorDto actualizarCredencialesShopify(VendorDto tienda, String apiKey, String accessToken, String storeUrl){
-                tienda.setShopifyApiKey(apiKey);
+        public VendorDto actualizarCredencialesShopify(VendorDto tienda, String accessToken, String storeUrl){
                 tienda.setShopifyAccessToken(accessToken);
                 tienda.setShopifyStoreUrl(storeUrl);
 

@@ -27,7 +27,6 @@ public class VendorDto {
 	private String sitio;
         private String email;
         private String telefono;
-        private String shopifyApiKey;
         private String shopifyAccessToken;
         private String shopifyStoreUrl;
         private Binary logo;
@@ -187,13 +186,6 @@ public class VendorDto {
         this.telefono = telefono;
     }
 
-    public String getShopifyApiKey() {
-        return shopifyApiKey;
-    }
-
-    public void setShopifyApiKey(String shopifyApiKey) {
-        this.shopifyApiKey = shopifyApiKey;
-    }
 
     public String getShopifyAccessToken() {
         return shopifyAccessToken;
