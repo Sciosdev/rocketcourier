@@ -57,7 +57,11 @@ public class ShopifyController {
             @PathVariable String user,
             @RequestParam(value = "created_at_min", required = false) String createdAtMin,
             @RequestParam(value = "created_at_max", required = false) String createdAtMax) {
-        Gson gson = new Gson(); // Cambiado de GsonBuilder a Gson simple
+        Gson gson = new GsonBuilder()
+            .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX") // Formato ISO 8601
+            .setPrettyPrinting()
+            .disableHtmlEscaping()
+            .create();
         try {
             log.info("Iniciando obtenerOrders para usuario: {} con created_at_min: {} y created_at_max: {}", user, createdAtMin, createdAtMax);
 
