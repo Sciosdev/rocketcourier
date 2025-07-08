@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
+// Ya no necesitamos JsonSyntaxException aquí si Jackson maneja la deserialización principal
 import com.rocket.service.entity.EstatusDto;
 import com.rocket.service.entity.EstatusLogDto;
 import com.rocket.service.entity.LoadDto;
@@ -56,9 +56,15 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-//@EnableTransactionManagement // Comentado temporalmente
+@EnableTransactionManagement // Re-habilitamos la gestión de transacciones
 @Slf4j
 public class TransaccionesRestController {
+
+    @Autowired
+    UsuarioService usuarioService;
+
+    @Autowired
+    RolService rolService;
 
     @Autowired
     RegistroService registroService;
@@ -70,202 +76,141 @@ public class TransaccionesRestController {
     EstatusService estatusService;
 
     @Autowired
-    SequenceGeneratorService sequenceGeneratorService;
-
-    // Las siguientes inyecciones son necesarias para los métodos que no estamos tocando ahora,
-    // pero que estaban causando el error de "reached end of file" si se comentaban mal.
-    @Autowired
-    UsuarioService usuarioService;
-
-    @Autowired
-    RolService rolService;
-
-    @Autowired
     VendorService vendorService;
 
+    @Autowired
+    SequenceGeneratorService sequenceGeneratorService;
 
     @RequestMapping(value = "/registro", method = RequestMethod.POST, produces = {
             "application/json;charset=UTF-8" }, consumes = { "application/json" })
-    public @ResponseBody ResponseEntity<LoadDto> guardarRegistros(@RequestBody String requestBodyString) {
-        log.info("====== INICIO Endpoint /registro POST ======");
-        log.info("Raw Payload String: {}", requestBodyString);
+    public @ResponseBody ResponseEntity<LoadDto> guardarRegistros(@RequestBody RegistroServiceInDto regis) { // Volvemos a RegistroServiceInDto
+        Gson gsonForLog = new GsonBuilder().setPrettyPrinting().create(); // Para loguear bonito si es necesario
+        log.info("Endpoint /registro POST recibido. Payload (deserializado por Jackson): {}", gsonForLog.toJson(regis));
 
-        Gson gson = new GsonBuilder()
-                .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
-                .create();
+        LoadDto regisCarga = new LoadDto();
+        List<String> errores = new ArrayList<>();
+        EstatusDto estatusInicial = estatusService.obtenerEstatusInicial();
+        Long idCarga;
 
-        RegistroServiceInDto regis;
-        LoadDto responseDto = new LoadDto();
-        responseDto.setUploadDate(new Date());
-        responseDto.setRegistrosExitosos(0);
-        responseDto.setRegistrosFallidos(0);
-        responseDto.setRegistrosOmitidos(0);
+        AtomicInteger exitoso = new AtomicInteger(0);
+        AtomicInteger fallido = new AtomicInteger(0);
+        AtomicInteger omitido = new AtomicInteger(0);
 
-        try {
-            regis = gson.fromJson(requestBodyString, RegistroServiceInDto.class);
-            if (regis == null) {
-                log.error("Payload deserializado a null.");
-                responseDto.setRespuesta("Error: El payload no pudo ser deserializado correctamente (resultado nulo).");
-                responseDto.setRegistrosFallidos(1);
-                return ResponseEntity.badRequest().body(responseDto);
-            }
-            log.info("Payload deserializado con Gson. idVendor: {}, tipoCarga: {}, número de registros: {}",
-                     regis.getIdVendor(), regis.getTipoCarga(), (regis.getRegistro() != null ? regis.getRegistro().size() : "null"));
-            responseDto.setIdVendor(regis.getIdVendor());
-            responseDto.setTipoCarga(regis.getTipoCarga());
-
-        } catch (JsonSyntaxException e) {
-            log.error("Error de sintaxis JSON deserializando el payload con Gson: ", e);
-            responseDto.setRespuesta("Error de formato en JSON: " + e.getMessage());
-            responseDto.setRegistrosFallidos(1);
-            return ResponseEntity.ok().body(responseDto); // Devolver 200 OK con error en DTO
-        } catch (Exception e) {
-            log.error("Error inesperado deserializando el payload con Gson: ", e);
-            responseDto.setRespuesta("Error inesperado durante la deserialización: " + e.getMessage());
-            responseDto.setRegistrosFallidos(1);
-            return ResponseEntity.ok().body(responseDto); // Devolver 200 OK con error en DTO
-        }
+        regisCarga.setTipoCarga(regis.getTipoCarga());
+        regisCarga.setIdVendor(regis.getIdVendor());
+        regisCarga.setUploadDate(new Date());
 
         if (regis.getRegistro() == null || regis.getRegistro().isEmpty()) {
-            log.info("La lista de registros está vacía o es nula. No hay nada que procesar.");
-            responseDto.setRespuesta("No se enviaron registros para procesar o la lista de registros es nula.");
-            return ResponseEntity.ok(responseDto);
+            log.info("La lista de registros en el payload está vacía o es nula.");
+            regisCarga.setRespuesta("No se enviaron registros para procesar.");
+            regisCarga.setIdCarga(null);
+            return ResponseEntity.ok(regisCarga);
         }
 
-        // Si llegamos aquí, la deserialización fue exitosa y hay registros.
-        // Por ahora, no los procesaremos, solo confirmaremos que llegaron.
-        log.info("Deserialización exitosa. {} registros recibidos. La lógica de guardado y validación principal está DESACTIVADA para depuración.", regis.getRegistro().size());
-        responseDto.setRespuesta("Datos recibidos y deserializados correctamente. Número de registros: " + regis.getRegistro().size() + ". El guardado está desactivado para depuración.");
-        responseDto.setRegistrosOmitidos(regis.getRegistro().size());
+        regisCarga.setIdCarga(sequenceGeneratorService.generateSequence(LoadDto.SEQUENCE_NAME));
+        LoadDto inserted = cargaService.guardarCarga(regisCarga); // Guarda la carga inicial
+        idCarga = inserted.getIdCarga();
+        regisCarga.setIdCarga(idCarga); // Asegurar que el DTO de respuesta tenga el idCarga
 
-        // Simular una carga para obtener un ID, aunque no guardemos los registros individuales aún
-        // Esto es para que el frontend reciba un idCarga y no falle por eso.
-        LoadDto tempCargaParaId = new LoadDto();
-        tempCargaParaId.setIdCarga(sequenceGeneratorService.generateSequence(LoadDto.SEQUENCE_NAME));
-        tempCargaParaId.setTipoCarga(regis.getTipoCarga());
-        tempCargaParaId.setIdVendor(regis.getIdVendor());
-        tempCargaParaId.setUploadDate(new Date());
-        tempCargaParaId.setRegistrosExitosos(0);
-        tempCargaParaId.setRegistrosFallidos(0);
-        tempCargaParaId.setRegistrosOmitidos(regis.getRegistro().size()); // Marcamos todos como omitidos en esta prueba
-        tempCargaParaId.setRespuesta(responseDto.getRespuesta());
-        // No guardamos esta carga temporal en la base de datos, solo usamos el ID generado.
-        // LoadDto cargaGuardada = cargaService.guardarCarga(tempCargaParaId); // No guardar aún
-        responseDto.setIdCarga(tempCargaParaId.getIdCarga());
+        if (regis.getTipoCarga() == 0) { // Shopify API
+            regis.getRegistro().forEach(registro -> {
+                if (registro.getOrder() == null) {
+                    log.warn("Se encontró un RegistryDto con OrderDto nulo para idCarga: {}", idCarga);
+                    errores.add("Registro inválido: datos del pedido faltantes.");
+                    fallido.incrementAndGet();
+                    return;
+                }
 
+                // Asegurarse que financial_status no sea null antes de equalsIgnoreCase
+                String financialStatus = registro.getOrder().getFinancial_status();
+                if (financialStatus != null && financialStatus.equalsIgnoreCase("Paid")) {
+                    try {
+                        registro.setIdCarga(idCarga);
+                        registro.setId(sequenceGeneratorService.generateSequence(RegistryDto.SEQUENCE_NAME));
+                        registro.setIdEstatus(estatusInicial.getId());
+                        if (registro.getOrder().getOrderKey() == null) {
+                            registro.getOrder().setOrderKey(new ObjectId());
+                        }
 
-        log.info("====== FIN Endpoint /registro POST (Respuesta de depuración) ======");
-        return ResponseEntity.ok(responseDto);
-
-
-        // Aquí comenzaría la lógica original de procesamiento que está comentada por ahora
-        /*
-		LoadDto regisCarga = new LoadDto();
-		List<String> errores = new ArrayList<>();
-		EstatusDto estatusInicial = estatusService.obtenerEstatusInicial();
-		Long idCarga;
-		AtomicInteger exitoso = new AtomicInteger(0);
-		AtomicInteger fallido = new AtomicInteger(0);
-		AtomicInteger omitido = new AtomicInteger(0);
-
-		regisCarga.setIdCarga(sequenceGeneratorService.generateSequence(LoadDto.SEQUENCE_NAME));
-		regisCarga.setTipoCarga(regis.getTipoCarga());
-		LoadDto inserted = cargaService.guardarCarga(regisCarga);
-		idCarga = inserted.getIdCarga();
-
-		if (regis.getTipoCarga() == 0) {
-			regis.getRegistro().forEach(registro -> {
-				RegistryDto insercion;
-				if (registro.getOrder().getFinancial_status() != null
-						&& registro.getOrder().getFinancial_status().equalsIgnoreCase("Paid")) {
-					try {
-						registro.setIdCarga(idCarga);
-						registro.setId(sequenceGeneratorService.generateSequence(RegistryDto.SEQUENCE_NAME));
-						registro.setIdEstatus(estatusInicial.getId());
-						if (registro.getOrder().getOrderKey() == null) {
-							registro.getOrder().setOrderKey(new ObjectId());
-						}
-
-						String validationError = registroService.validacion(registro);
+                        String validationError = registroService.validacion(registro);
                         if (validationError == null || validationError.trim().isEmpty()) {
+                            EstatusLogDto estatusLog = new EstatusLogDto();
+                            estatusLog.setEstatusAnterior(null);
+                            estatusLog.setEstatusActual(registro.getIdEstatus());
+                            estatusLog.setFechaActualizacion(new Date());
+                            estatusLog.setUsuario(regis.getIdVendor());
+                            List<EstatusLogDto> estatusLogList = new ArrayList<>();
+                            estatusLogList.add(estatusLog);
+                            registro.setEstatusLog(estatusLogList);
 
-							EstatusLogDto estatusLog = new EstatusLogDto();
-							estatusLog.setEstatusAnterior(null);
-							estatusLog.setEstatusActual(registro.getIdEstatus());
-							estatusLog.setFechaActualizacion(new Date());
-							estatusLog.setUsuario(regis.getIdVendor());
-							List<EstatusLogDto> estatusLogList = new ArrayList<>();
-							estatusLogList.add(estatusLog);
-							registro.setEstatusLog(estatusLogList);
-
-							insercion = registroService.guardar(registro);
-							if (insercion != null) {
-								exitoso.incrementAndGet();
+                            RegistryDto insercion = registroService.guardar(registro);
+                            if (insercion != null) {
+                                exitoso.incrementAndGet();
                             } else {
-                                log.error("Error al guardar registro (insercion nula) para orden: {}", registro.getOrder() != null ? registro.getOrder().getName() : "ID DESCONOCIDO");
-                                errores.add("Error en fila [" + (registro.getRowNumber() != null ? registro.getRowNumber() : "N/A") + "] : Falla desconocida al guardar.");
+                                log.error("Error al guardar registro (insercion nula) para orden: {} con idCarga: {}", registro.getOrder().getName(), idCarga);
+                                errores.add("Error en pedido [" + registro.getOrder().getName() + "] : Falla desconocida al guardar.");
                                 fallido.incrementAndGet();
                             }
-						} else {
-                            log.warn("Validación fallida para el pedido: {}. Errores: {}", (registro.getOrder() != null ? registro.getOrder().getName() : "ID DESCONOCIDO"), validationError.trim());
-							errores.add("Error en fila [" + (registro.getRowNumber() != null ? registro.getRowNumber() : "N/A") + "] : "
-									+ validationError.trim());
-							fallido.incrementAndGet();
-						}
-
-					} catch (Exception e) {
-                        log.error("Excepción procesando registro para orden: {}", (registro.getOrder() != null ? registro.getOrder().getName() : "ID DESCONOCIDO"), e);
-                        errores.add("Error en fila [" + (registro.getRowNumber() != null ? registro.getRowNumber() : "N/A") + "] : " + e.getMessage());
-						fallido.incrementAndGet();
-					}
-				} else {
-                    log.info("Pedido omitido (financial_status no es 'Paid' o es nulo): {}", (registro.getOrder() != null ? registro.getOrder().getName() : "ID DESCONOCIDO"));
-					omitido.incrementAndGet();
-				}
-			});
-		} else {
-			regis.getRegistro().forEach(registro -> {
-				RegistryDto insercion;
-				try {
-					registro.setIdCarga(idCarga);
-					registro.setId(sequenceGeneratorService.generateSequence(RegistryDto.SEQUENCE_NAME));
-					registro.setIdEstatus(estatusInicial.getId());
-                    if (registro.getOrder().getOrderKey() == null) {
+                        } else {
+                            log.warn("Validación fallida para el pedido: {} con idCarga: {}. Errores: {}", registro.getOrder().getName(), idCarga, validationError.trim());
+                            errores.add("Error en pedido [" + registro.getOrder().getName() + "] : " + validationError.trim());
+                            fallido.incrementAndGet();
+                        }
+                    } catch (Exception e) {
+                        log.error("Excepción procesando pedido: {} con idCarga: {}", registro.getOrder().getName(), idCarga, e);
+                        errores.add("Error en pedido [" + registro.getOrder().getName() + "] : " + e.getMessage());
+                        fallido.incrementAndGet();
+                    }
+                } else {
+                    log.info("Pedido omitido (financial_status no es 'Paid' o es nulo): {} con idCarga: {}", registro.getOrder().getName(), idCarga);
+                    omitido.incrementAndGet();
+                }
+            });
+        } else { // Lógica para tipoCarga != 0 (CSV)
+            regis.getRegistro().forEach(registro -> {
+                RegistryDto insercion;
+                try {
+                    registro.setIdCarga(idCarga);
+                    registro.setId(sequenceGeneratorService.generateSequence(RegistryDto.SEQUENCE_NAME));
+                    registro.setIdEstatus(estatusInicial.getId());
+                    if (registro.getOrder() != null && registro.getOrder().getOrderKey() == null) {
                        registro.getOrder().setOrderKey(new ObjectId());
                     }
-					EstatusLogDto estatusLog = new EstatusLogDto();
-					estatusLog.setEstatusAnterior(null);
-					estatusLog.setEstatusActual(registro.getIdEstatus());
-					estatusLog.setFechaActualizacion(new Date());
-					estatusLog.setUsuario(regis.getIdVendor());
-					List<EstatusLogDto> estatusLogList = new ArrayList<>();
-					estatusLogList.add(estatusLog);
-					registro.setEstatusLog(estatusLogList);
 
-					insercion = registroService.guardar(registro);
-					if (insercion != null) {
-						exitoso.incrementAndGet();
+                    EstatusLogDto estatusLog = new EstatusLogDto();
+                    estatusLog.setEstatusAnterior(null);
+                    estatusLog.setEstatusActual(registro.getIdEstatus());
+                    estatusLog.setFechaActualizacion(new Date());
+                    estatusLog.setUsuario(regis.getIdVendor());
+                    List<EstatusLogDto> estatusLogList = new ArrayList<>();
+                    estatusLogList.add(estatusLog);
+                    registro.setEstatusLog(estatusLogList);
+
+                    insercion = registroService.guardar(registro);
+                    if (insercion != null) {
+                        exitoso.incrementAndGet();
                     } else {
                         fallido.incrementAndGet();
                          errores.add("Error en fila [" + (registro.getRowNumber() != null ? registro.getRowNumber() : "N/A") + "] : Falla desconocida al guardar (CSV).");
                     }
-				} catch (Exception e) {
-                    log.error("Excepción procesando registro CSV: ", e);
+                } catch (Exception e) {
+                    log.error("Excepción procesando registro CSV para fila [{}], idCarga: {}: ", (registro.getRowNumber() != null ? registro.getRowNumber() : "N/A"), idCarga, e);
                     errores.add("Error en fila [" + (registro.getRowNumber() != null ? registro.getRowNumber() : "N/A") + "] : " + e.getMessage());
-					fallido.incrementAndGet();
-				}
-			});
-		}
-		Date date = new Date();
+                    fallido.incrementAndGet();
+                }
+            });
+        }
 
-        regisCarga.setUploadDate(date);
         regisCarga.setRegistrosExitosos(exitoso.get());
         regisCarga.setRegistrosFallidos(fallido.get());
         regisCarga.setRegistrosOmitidos(omitido.get());
+
         if (errores.isEmpty()) {
             if (exitoso.get() > 0 || omitido.get() > 0) {
-                regisCarga.setRespuesta("Registro Finalizado");
-            } else if (fallido.get() == 0 && omitido.get() == 0 && exitoso.get() == 0 && (regis.getRegistro() == null || regis.getRegistro().isEmpty())){ // Ajuste aquí
+                regisCarga.setRespuesta("Proceso de carga finalizado.");
+            } else if (fallido.get() == 0 && regis.getRegistro() != null && !regis.getRegistro().isEmpty()) {
+                 regisCarga.setRespuesta("No se procesaron registros, revise los logs.");
+            } else if (regis.getRegistro() == null || regis.getRegistro().isEmpty()){
                  regisCarga.setRespuesta("No se enviaron registros para procesar.");
             } else {
                  regisCarga.setRespuesta("No se procesaron registros.");
@@ -273,15 +218,10 @@ public class TransaccionesRestController {
         } else {
             regisCarga.setRespuesta(StringUtils.join(errores, " | "));
         }
-        regisCarga.setIdVendor(regis.getIdVendor());
 
-        if (exitoso.get() > 0 || fallido.get() > 0 || omitido.get() > 0 || (regis.getRegistro() != null && !regis.getRegistro().isEmpty()) ) { // Guardar si hubo actividad o se intentó procesar algo
-            return cargaService.guardarCarga(regisCarga);
-        } else {
-            regisCarga.setIdCarga(null);
-            return regisCarga;
-        }
-        */
+        // Actualizar el LoadDto con los contadores finales
+        LoadDto finalLoad = cargaService.guardarCarga(regisCarga);
+        return ResponseEntity.ok(finalLoad);
     }
 
 	private @ResponseBody ResponseEntity<String> obtenerRegistros(Integer idEstatus, List<String> customer,
@@ -292,32 +232,22 @@ public class TransaccionesRestController {
 		List<LoadDto> cargas;
 
 		if (customer != null && !customer.isEmpty()) {
-            // Esta lógica usa UsuarioService y VendorService que fueron comentados arriba.
-            // Si se descomenta esta parte, también se deben descomentar esas inyecciones.
-			// cargas = cargaService.consultaCargaVendedor(customer);
-            // cargas.forEach(carga -> {
-            // List<RegistryDto> regisList; // Renombrado para evitar conflicto con la variable 'regis' del método padre
-            // regisList = registroService.consultaRegistroCargaEstatus(carga.getIdCarga(), idEstatus, courier);
-            // regisList.forEach(registro -> {
-            //	 RegistroServiceOutDto r = RegistroMapper.mapRegistroCargaToRegistroOut(registro, carga,
-            //			 usuarioService, vendorService, estatusService);
-            //	 registros.add(r);
-            // });
-            // });
-            log.warn("La lógica de obtenerRegistros con 'customer' no está completamente activa debido a dependencias comentadas.");
+            cargas = cargaService.consultaCargaVendedor(customer);
+            cargas.forEach(carga -> {
+                List<RegistryDto> regisList;
+                regisList = registroService.consultaRegistroCargaEstatus(carga.getIdCarga(), idEstatus, courier);
+                regisList.forEach(registro -> {
+			RegistroServiceOutDto r = RegistroMapper.mapRegistroCargaToRegistroOut(registro, carga,
+					usuarioService, vendorService, estatusService);
+			registros.add(r);
+                });
+            });
 		} else {
-
 			List<RegistryDto> temp = registroService.consultaRegistroPorCourierYEstatus(courier, idEstatus);
 			temp.forEach(registro -> {
 				LoadDto carga = cargaService.obtenerCargaPorId(registro.getIdCarga());
-                // Asegurarse que RegistroMapper.mapRegistroCargaToRegistroOut no dependa de los servicios comentados si se usa aquí
-                // Temporalmente, para evitar errores de compilación si esas dependencias son necesarias para el mapper:
-                // registros.add(RegistroMapper.mapRegistroCargaToRegistroOut(registro, carga, usuarioService, vendorService, estatusService));
-                // Para que compile, debemos tener las dependencias o no llamar al mapper que las usa.
-                // Por ahora, solo logueamos para evitar el error de compilación.
-                if (registro != null && carga != null) { // Evitar NPE
-                    log.debug("Procesando registro para obtenerRegistros sin customer: {} con carga {}", registro.getId(), carga.getIdCarga());
-                }
+                registros.add(RegistroMapper.mapRegistroCargaToRegistroOut(registro, carga, usuarioService,
+                        vendorService, estatusService));
 			});
 		}
 
@@ -385,7 +315,6 @@ public class TransaccionesRestController {
 	@RequestMapping(value = "/registro/agenda/solicitar", method = RequestMethod.PUT, produces = {
 			"application/json;charset=UTF-8" })
 	public @ResponseBody ResponseEntity<String> solicitarAgenda(@RequestBody List<ScheduleServiceInDto> scheduleList) {
-
 		List<RegistryDto> registros = new ArrayList<>();
 		for (ScheduleServiceInDto schedule : scheduleList) {
 			RegistryDto registro = registroService.buscarPorOrderKey(new ObjectId(schedule.getOrderkey()));
@@ -393,7 +322,10 @@ public class TransaccionesRestController {
                 log.warn("No se encontró registro para la orden {} en solicitarAgenda", schedule.getOrderkey());
                 continue;
             }
-
+            if (registro.getOrder() == null) { // Defensa contra NPE
+                log.warn("OrderDto es nulo para el registro {} en solicitarAgenda", registro.getId());
+                continue;
+            }
 			EstatusDto actual = estatusService.obtenerEstatusPorId(registro.getIdEstatus());
             if (actual == null) {
                 log.warn("No se encontró estatus actual para el registro {} con idEstatus {}", registro.getId(), registro.getIdEstatus());
@@ -404,20 +336,17 @@ public class TransaccionesRestController {
                 log.warn("No se encontró estatus siguiente para el estatus actual {}", actual.getId());
                 continue;
             }
-
 			EstatusLogDto estatusLog = new EstatusLogDto();
 			estatusLog.setEstatusAnterior(actual.getId());
 			estatusLog.setEstatusActual(siguiente.getId());
 			estatusLog.setFechaActualizacion(new Date());
 			estatusLog.setUsuario(schedule.getUser());
-
 			List<EstatusLogDto> estatusLogList = registro.getEstatusLog();
 			if (estatusLogList == null) {
 				estatusLogList = new ArrayList<>();
             }
 			estatusLogList.add(estatusLog);
 			registro.setEstatusLog(estatusLogList);
-
 			ScheduledDto scheduled = new ScheduledDto();
 			scheduled.setScheduledDate(schedule.getScheduledDate());
 			scheduled.setIdVendor(schedule.getVendor());
@@ -427,7 +356,6 @@ public class TransaccionesRestController {
 			registro.setIdEstatus(siguiente.getId());
 			registros.add(registro);
 		}
-
 		List<DBResponse> respuesta = new ArrayList<>();
 		for (RegistryDto registro : registros) {
 			RegistryDto registroResponse = registroService.guardar(registro);
@@ -455,7 +383,10 @@ public class TransaccionesRestController {
                 log.warn("No se encontró registro para la orden {} en aceptarAgenda", schedule.getOrderkey());
                 continue;
             }
-
+            if (registro.getOrder() == null) { // Defensa contra NPE
+                log.warn("OrderDto es nulo para el registro {} en aceptarAgenda", registro.getId());
+                continue;
+            }
 			EstatusDto actual = estatusService.obtenerEstatusPorId(registro.getIdEstatus());
             if (actual == null) {
                 log.warn("No se encontró estatus actual para el registro {} con idEstatus {}", registro.getId(), registro.getIdEstatus());
@@ -466,22 +397,19 @@ public class TransaccionesRestController {
                 log.warn("No se encontró estatus siguiente para el estatus actual {}", actual.getId());
                 continue;
             }
-
 			EstatusLogDto estatusLog = new EstatusLogDto();
 			estatusLog.setEstatusAnterior(actual.getId());
 			estatusLog.setEstatusActual(siguiente.getId());
 			estatusLog.setFechaActualizacion(new Date());
 			estatusLog.setUsuario(schedule.getUser());
-
 			List<EstatusLogDto> estatusLogList = registro.getEstatusLog();
 			if (estatusLogList == null) {
 				estatusLogList = new ArrayList<>();
             }
 			estatusLogList.add(estatusLog);
 			registro.setEstatusLog(estatusLogList);
-
 			ScheduledDto scheduled = registro.getScheduled();
-            if (scheduled == null) { // Defensive coding
+            if (scheduled == null) {
                 scheduled = new ScheduledDto();
             }
 			scheduled.setAccepted(true);
@@ -493,7 +421,6 @@ public class TransaccionesRestController {
 			registro.setIdEstatus(siguiente.getId());
 			registros.add(registro);
 		}
-
 		List<DBResponse> respuesta = new ArrayList<>();
 		for (RegistryDto registro : registros) {
 			RegistryDto registroResponse = registroService.guardar(registro);
@@ -514,7 +441,6 @@ public class TransaccionesRestController {
 	@RequestMapping(value = "/registro/agenda/rechazar", method = RequestMethod.PUT, produces = {
 			"application/json;charset=UTF-8" })
 	public @ResponseBody ResponseEntity<String> rechazarAgenda(@RequestBody List<ScheduleServiceInDto> scheduleList) {
-
 		List<RegistryDto> registros = new ArrayList<>();
 		for (ScheduleServiceInDto scheduleServiceInDto : scheduleList) {
 			RegistryDto registro = registroService.buscarPorOrderKey(new ObjectId(scheduleServiceInDto.getOrderkey()));
@@ -522,7 +448,10 @@ public class TransaccionesRestController {
                 log.warn("No se encontró registro para la orden {} en rechazarAgenda", scheduleServiceInDto.getOrderkey());
                 continue;
             }
-
+            if (registro.getOrder() == null) { // Defensa contra NPE
+                log.warn("OrderDto es nulo para el registro {} en rechazarAgenda", registro.getId());
+                continue;
+            }
 			EstatusDto actual = estatusService.obtenerEstatusPorId(registro.getIdEstatus());
             if (actual == null) {
                 log.warn("No se encontró estatus actual para el registro {} con idEstatus {}", registro.getId(), registro.getIdEstatus());
@@ -533,33 +462,28 @@ public class TransaccionesRestController {
                 log.warn("No se encontró estatus siguiente (excepción) para el estatus actual {}", actual.getId());
                 continue;
             }
-
 			EstatusLogDto estatusLog = new EstatusLogDto();
 			estatusLog.setEstatusAnterior(actual.getId());
 			estatusLog.setEstatusActual(siguiente.getId());
 			estatusLog.setFechaActualizacion(new Date());
 			estatusLog.setUsuario(scheduleServiceInDto.getUser());
-
 			List<EstatusLogDto> estatusLogList = registro.getEstatusLog();
 			if (estatusLogList == null) {
 				estatusLogList = new ArrayList<>();
             }
 			estatusLogList.add(estatusLog);
 			registro.setEstatusLog(estatusLogList);
-
 			ScheduledDto scheduled = registro.getScheduled();
-            if (scheduled == null) { // Defensive coding
+            if (scheduled == null) {
                 scheduled = new ScheduledDto();
             }
 			scheduled.setAccepted(false);
 			scheduled.setComment(scheduleServiceInDto.getComment());
 			scheduled.setScheduledDate(null);
-
 			registro.setScheduled(scheduled);
 			registro.setIdEstatus(siguiente.getId());
 			registros.add(registro);
 		}
-
 		List<DBResponse> respuesta = new ArrayList<>();
 		for (RegistryDto registro : registros) {
 			RegistryDto registroResponse = registroService.guardar(registro);
@@ -588,28 +512,22 @@ public class TransaccionesRestController {
 			"application/json;charset=UTF-8" })
 	public @ResponseBody ResponseEntity<String> consultaEstatusLogRegistro(@PathVariable String hexString) {
 		ObjectId orderKey = null;
-
 		Gson gson = new GsonBuilder().setPrettyPrinting().setDateFormat("hh:mm:ss a")
 				.setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
-
 		try {
 			orderKey = new ObjectId(hexString);
 		} catch (Exception e) {
 			DBResponse response = new DBResponse(false, "Formato inválido de clave de rastreo");
 			return new ResponseEntity<>(gson.toJson(response), HttpStatus.BAD_REQUEST);
 		}
-
 		RegistryDto registro = registroService.buscarPorOrderKey(orderKey);
-
 		if (registro == null) {
 			DBResponse response = new DBResponse(false, "No se encontro la clave de rastreo");
 			return new ResponseEntity<>(gson.toJson(response), HttpStatus.BAD_REQUEST);
 		}
-
 		List<EstatusLogDto> estatusLogs = registro.getEstatusLog();
 		List<EstatusLogDataDto> logs = new ArrayList<>();
-
-        if (estatusLogs != null) { // Check for null before iterating
+        if (estatusLogs != null) {
 		    estatusLogs.forEach(estatusLog -> {
 			    if (estatusLog.getFechaActualizacion() != null) {
 				    EstatusLogDataDto estatusLogServiceDto;
@@ -619,32 +537,25 @@ public class TransaccionesRestController {
 			    }
 		    });
         }
-
 		Collections.sort(logs);
-
-		Map<LocalDate, List<EstatusLogDataDto>> result = logs.stream().collect(Collectors
-				.groupingBy(item -> convertToLocalDateViaInstant(item.getFecha())
+		Map<LocalDate, List<EstatusLogDataDto>> result = logs.stream()
+            .filter(log -> log.getFecha() != null) // Filtrar nulos antes de agrupar
+            .collect(Collectors.groupingBy(item -> convertToLocalDateViaInstant(item.getFecha())
 						.with(TemporalAdjusters.ofDateAdjuster(d -> d))));
-
 		List<HistoricoDto> historico = new ArrayList<>();
-
 		result.keySet().forEach(key -> {
 			List<EstatusLogDataDto> list = result.get(key);
 			Collections.sort(list, Collections.reverseOrder());
 			HistoricoDto h = new HistoricoDto(key, list);
 			historico.add(h);
 		});
-
 		Collections.sort(historico, Collections.reverseOrder());
-
-		EstatusLogServiceDto responseFramework = new EstatusLogServiceDto(); // Renamed to avoid conflict
-
+		EstatusLogServiceDto responseFramework = new EstatusLogServiceDto();
 		EstatusDto estatusActual = estatusService.obtenerEstatusPorId(registro.getIdEstatus());
 		responseFramework.setEstatusActual(estatusActual);
 		responseFramework.setHistorico(historico);
 		responseFramework.setDestino(registro.getShipping_address());
 		responseFramework.setOrigen(registro.getBilling_address());
-
 		return new ResponseEntity<>(gson.toJson(responseFramework), HttpStatus.OK);
 	}
 
