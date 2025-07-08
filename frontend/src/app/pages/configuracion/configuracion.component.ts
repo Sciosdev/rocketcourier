@@ -11,7 +11,6 @@ import { UsuarioCompleto } from 'src/app/models/usuario-completo.model';
   styleUrls: ['./configuracion.component.scss']
 })
 export class ConfiguracionComponent implements OnInit {
-  apiKey: string = '';
   accessToken: string = '';
   storeUrl: string = '';
   saving = false;
@@ -37,7 +36,6 @@ export class ConfiguracionComponent implements OnInit {
                 .obtenerCredencialesShopify(this.vendorId)
                 .subscribe(
                   (cred: any) => {
-                    this.apiKey = cred.shopifyApiKey || '';
                     this.accessToken = cred.shopifyAccessToken || '';
                     this.storeUrl = cred.shopifyStoreUrl || '';
                   },
@@ -66,7 +64,6 @@ export class ConfiguracionComponent implements OnInit {
     }
     this.saving = true;
     const cred = {
-      shopifyApiKey: this.apiKey,
       shopifyAccessToken: this.accessToken,
       shopifyStoreUrl: this.storeUrl
     };
