@@ -83,6 +83,8 @@ public class TransaccionesRestController {
 	@RequestMapping(value = "/registro", method = RequestMethod.POST, produces = {
 			"application/json;charset=UTF-8" }, consumes = { "application/json" })
 	public @ResponseBody LoadDto guardarRegistros(@RequestBody RegistroServiceInDto regis) {
+		Gson gson = new GsonBuilder().setPrettyPrinting().create(); // Para loguear bonito
+		log.info("Endpoint /registro POST recibido. Payload: {}", gson.toJson(regis)); // LOG IMPORTANTE
 
 		log.info("Tipo de carga: " + regis.getTipoCarga());
 
