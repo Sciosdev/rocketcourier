@@ -65,7 +65,7 @@ public class ShopifyController {
             .disableHtmlEscaping()
             .create();
 
-        Map<String, Object> responseMap = new HashMap<>(); // Mapa para la respuesta final
+        // Map<String, Object> responseMap = new HashMap<>(); // Ya no se usa para la respuesta final
 
         try {
             log.info("Iniciando obtenerOrders para usuario: {} con created_at_min: {} y created_at_max: {}", user, createdAtMin, createdAtMax);
@@ -118,7 +118,8 @@ public class ShopifyController {
             headers.add("X-Shopify-Access-Token", shopifyAccessToken);
             
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(finalShopifyApiUrl)
-                                             .queryParam("status", "any"); // Añadir status=any
+                                             .queryParam("status", "any")
+                                             .queryParam("fields", "id,name,email,financial_status,created_at,currency,subtotal_price,total_shipping_price_set,shipping_address,billing_address,line_items,note,note_attributes,customer,shipping_lines,processed_at,updated_at,fulfillment_status,cancelled_at,phone,company,address1,address2,city,zip,province,country,province_code");
 
             if (createdAtMin != null && !createdAtMin.trim().isEmpty()) {
                 builder.queryParam("created_at_min", createdAtMin);
@@ -126,8 +127,7 @@ public class ShopifyController {
             if (createdAtMax != null && !createdAtMax.trim().isEmpty()) {
                 builder.queryParam("created_at_max", createdAtMax);
             }
-            // builder.queryParam("limit", 250); // Considerar para paginación
-            // builder.queryParam("fields", "id,name,email,financial_status,created_at,currency,subtotal_price,total_shipping_price_set,shipping_address,billing_address,note,note_attributes,line_items"); // Especificar campos
+            // builder.queryParam("limit", 250);
             
             String requestUrl = builder.toUriString();
             log.info("Full request URL with params: {}", requestUrl);
@@ -146,26 +146,17 @@ public class ShopifyController {
             }
 
             log.info("Shopify API Response Status: {}", resp.getStatusCode());
-            // log.info("Shopify API Response Body: {}", resp.getBody()); // Loguear el cuerpo completo puede ser muy verboso
+            // No loguear todo el body si puede ser muy grande, solo si es necesario para debug puntual.
+            // log.info("Shopify API Response Body: {}", resp.getBody());
 
             JsonObject obj = JsonParser.parseString(resp.getBody()).getAsJsonObject();
             JsonArray ordersArray = obj.getAsJsonArray("orders");
             List<RegistryDto> registros = new ArrayList<>();
-            String debugShopifyResponseData = "No orders found or error parsing orders.";
 
             if (ordersArray == null) {
                 log.warn("La respuesta de Shopify no contiene el array 'orders' o es nulo.");
-                debugShopifyResponseData = "Shopify response does not contain 'orders' array or it is null.";
             } else {
                 log.info("Número de pedidos recibidos de Shopify: {}", ordersArray.size());
-                if (ordersArray.size() > 0) {
-                    // Para depuración, tomamos el primer pedido como ejemplo
-                    JsonObject firstOrderJson = ordersArray.get(0).getAsJsonObject();
-                    debugShopifyResponseData = "First order raw: " + gson.toJson(firstOrderJson);
-                } else {
-                    debugShopifyResponseData = "Shopify returned 0 orders.";
-                }
-
                 for (JsonElement element : ordersArray) {
                     JsonObject o = element.getAsJsonObject();
                     RegistryDto reg = new RegistryDto();
@@ -265,17 +256,13 @@ public class ShopifyController {
             dto.setRegistro(registros);
             dto.setIdVendor(user);
             dto.setTipoCarga(0);
-
-            responseMap.put("payload", dto);
-            responseMap.put("debugShopifyResponse", debugShopifyResponseData);
-
-            log.info("Devolviendo {} registros al frontend para el usuario {}.", registros.size(), user);
-            return ResponseEntity.ok(gson.toJson(responseMap));
+            log.info("Devolviendo {} registros al frontend para el usuario {}. Payload: {}", registros.size(), user, gson.toJson(dto)); // Loguear el DTO que se envía
+            return ResponseEntity.ok(gson.toJson(dto)); // Devolver directamente el DTO serializado
 
         } catch (Exception e) {
             log.error("Error general en obtenerOrders para usuario: {}. Fechas: min={}, max={}. Excepción: ", user, createdAtMin, createdAtMax, e);
-            responseMap.put("error", "Error interno del servidor al consultar Shopify: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(gson.toJson(responseMap));
+            // Devolver un DBResponse en caso de error, como antes
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(gson.toJson(new DBResponse(false, "Error interno del servidor al consultar Shopify: " + e.getMessage())));
         }
     }
 }
