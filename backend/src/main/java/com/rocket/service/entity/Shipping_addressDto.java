@@ -1,30 +1,30 @@
 package com.rocket.service.entity;
 
-import javax.validation.constraints.NotEmpty;
+// import javax.validation.constraints.NotEmpty; // Comentado temporalmente
 
 public class Shipping_addressDto {
 	
-	@NotEmpty(message = "name es un campo requerido")
+	// @NotEmpty(message = "name es un campo requerido")
 	private String name;
-	@NotEmpty(message = "street es un campo requerido")
+	// @NotEmpty(message = "street es un campo requerido")
 	private String street;
-	@NotEmpty(message = "address1 es un campo requerido")
+	// @NotEmpty(message = "address1 es un campo requerido")
 	private String address1;
-	@NotEmpty(message = "address2 es un campo requerido")
+	// @NotEmpty(message = "address2 es un campo requerido")
 	private String address2;
-	@NotEmpty(message = "company es un campo requerido")
+	// @NotEmpty(message = "company es un campo requerido")
 	private String company;
-	@NotEmpty(message = "city es un campo requerido")
+	// @NotEmpty(message = "city es un campo requerido")
 	private String city;
-	@NotEmpty(message = "zip es un campo requerido")
+	// @NotEmpty(message = "zip es un campo requerido")
 	private String zip;
-	@NotEmpty(message = "province es un campo requerido")
+	// @NotEmpty(message = "province es un campo requerido")
 	private String province;
-	@NotEmpty(message = "province_name es un campo requerido")
+	// @NotEmpty(message = "province_name es un campo requerido")
 	private String province_name;
-	@NotEmpty(message = "country es un campo requerido")
+	// @NotEmpty(message = "country es un campo requerido")
 	private String country;
-	@NotEmpty(message = "phone es un campo requerido")
+	// @NotEmpty(message = "phone es un campo requerido")
 	private String phone;
 
 	

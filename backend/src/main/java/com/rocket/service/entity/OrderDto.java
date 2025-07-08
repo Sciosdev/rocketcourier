@@ -13,25 +13,25 @@ public class OrderDto {
 	private String id;
 	@BsonId
 	private ObjectId orderKey;
-	private String name;
-	@Email
+	private String name; // Validado por registroService.validacion()
+	// @Email // Puede permitir cadena vacía, @NotEmpty no. Se valida en registroService si es necesario.
 	private String email;
 	@NotEmpty(message = "vendor es un campo requerido")
-	private String vendor;
-	@NotEmpty(message = "risk_level es un campo requerido")
+	private String vendor; // Mantenemos esta, ya que 'user' se usa para esto.
+	// @NotEmpty(message = "risk_level es un campo requerido") // Shopify puede no enviarlo, mapeado a "N/A"
 	private String risk_level;
-	@NotEmpty(message = "vendor es un campo requerido")
+	// @NotEmpty(message = "source es un campo requerido") // Mapeado a "SHOPIFY"
 	private String source;
 	@NotEmpty(message = "financial_status es un campo requerido")
-	private String financial_status;
-	@NotEmpty(message = "accepts_marketing es un campo requerido")
+	private String financial_status; // Crítico para la lógica de guardado
+	// @NotEmpty(message = "accepts_marketing es un campo requerido") // Puede ser 'no' o no venir
 	private String accepts_marketing;
-	@NotEmpty(message = "accepts_marketing es un campo requerido")
+	// @NotEmpty(message = "currency es un campo requerido") // Shopify debería enviarlo
 	private String currency;
 	private double subtotal;	
-	@NotEmpty(message = "shipping es un campo requerido")
+	// @NotEmpty es incorrecto para double. Si se requiere que no sea cero, usar @Min(0) o validación lógica.
 	private double shipping;
-	@NotEmpty(message = "shipping_method es un campo requerido")
+	// @NotEmpty(message = "shipping_method es un campo requerido") // Puede ser vacío si no hay shipping lines
 	private String shipping_method;
 	@NotNull(message = "created_at Es un campo requerido")
 	private Date created_at;
