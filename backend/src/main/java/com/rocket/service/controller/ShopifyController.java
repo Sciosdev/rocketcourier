@@ -28,6 +28,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import com.google.gson.GsonBuilder; // Asegurar que GsonBuilder esté importado si se usa, o quitar su uso.
+import org.springframework.http.HttpStatus; // Importación faltante
+
+// ... (otros imports permanecen igual)
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
@@ -53,7 +57,7 @@ public class ShopifyController {
             @PathVariable String user,
             @RequestParam(value = "created_at_min", required = false) String createdAtMin,
             @RequestParam(value = "created_at_max", required = false) String createdAtMax) {
-        Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+        Gson gson = new Gson(); // Cambiado de GsonBuilder a Gson simple
         try {
             log.info("Iniciando obtenerOrders para usuario: {} con created_at_min: {} y created_at_max: {}", user, createdAtMin, createdAtMax);
 
