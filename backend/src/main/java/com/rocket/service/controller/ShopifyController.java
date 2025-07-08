@@ -153,7 +153,7 @@ public class ShopifyController {
             }
 
             log.info("Shopify API Response Status: {}", resp.getStatusCode());
-            log.error("DEBUG - Shopify API Response Body: {}", resp.getBody());
+            log.debug("DEBUG - Shopify API Response Body: {}", resp.getBody()); // Cambiado a log.debug
 
             JsonObject obj = JsonParser.parseString(resp.getBody()).getAsJsonObject();
             JsonArray ordersArray = obj.getAsJsonArray("orders");
@@ -222,21 +222,20 @@ public class ShopifyController {
                     JsonObject customerDefaultAddressJson = null;
                     if (customerJson != null && customerJson.has("default_address") && customerJson.get("default_address").isJsonObject()) {
                         customerDefaultAddressJson = customerJson.getAsJsonObject("default_address");
-                        log.error("DEBUG - Raw customer.default_address JSON para pedido {}: {}", (order.getId() != null ? order.getId() : "N/A"), customerDefaultAddressJson.toString());
+                        log.debug("DEBUG - Raw customer.default_address JSON para pedido {}: {}", (order.getId() != null ? order.getId() : "N/A"), customerDefaultAddressJson.toString());
                     }
 
-                    JsonObject saJson = null; // Para el shipping_address del pedido
+                    JsonObject saJson = null;
                     if (o.has("shipping_address") && o.get("shipping_address").isJsonObject()) {
                         saJson = o.getAsJsonObject("shipping_address");
-                        log.error("DEBUG - Raw order.shipping_address JSON para pedido {}: {}", (order.getId() != null ? order.getId() : "N/A"), saJson.toString());
+                        log.debug("DEBUG - Raw order.shipping_address JSON para pedido {}: {}", (order.getId() != null ? order.getId() : "N/A"), saJson.toString());
                     }
 
-                    JsonObject effectiveShippingAddress = saJson; // Por defecto, usar el del pedido
-                    // Verificar si saJson es "básicamente vacío" (solo provincia y país, sin address1)
+                    JsonObject effectiveShippingAddress = saJson;
                     boolean shippingAddressIsBasic = (saJson != null && getString(saJson, "address1").isEmpty() && saJson.has("province") && saJson.has("country"));
 
                     if (effectiveShippingAddress == null || shippingAddressIsBasic) {
-                        if (customerDefaultAddressJson != null) { // Si existe default_address y el del pedido es básico o nulo
+                        if (customerDefaultAddressJson != null) {
                             log.info("Usando customer.default_address como shipping_address para el pedido {}", order.getId());
                             effectiveShippingAddress = customerDefaultAddressJson;
                         }
@@ -245,43 +244,43 @@ public class ShopifyController {
                     Shipping_addressDto ship = new Shipping_addressDto();
                     if (effectiveShippingAddress != null) {
                         ship.setName(getString(effectiveShippingAddress, "name", (getString(effectiveShippingAddress,"first_name") + " " + getString(effectiveShippingAddress,"last_name")).trim()));
-                        log.error("DEBUG - Mapped Shipping Name: '{}'", ship.getName());
+                        log.debug("DEBUG - Mapped Shipping Name: '{}'", ship.getName());
                         String addr1 = getString(effectiveShippingAddress, "address1");
                         ship.setStreet(addr1);
                         ship.setAddress1(addr1);
-                        log.error("DEBUG - Mapped Shipping Street/Address1: '{}'", addr1);
+                        log.debug("DEBUG - Mapped Shipping Street/Address1: '{}'", addr1);
                         ship.setAddress2(getString(effectiveShippingAddress, "address2"));
-                        log.error("DEBUG - Mapped Shipping Address2: '{}'", ship.getAddress2());
+                        log.debug("DEBUG - Mapped Shipping Address2: '{}'", ship.getAddress2());
                         ship.setCompany(getString(effectiveShippingAddress, "company"));
-                        log.error("DEBUG - Mapped Shipping Company: '{}'", ship.getCompany());
+                        log.debug("DEBUG - Mapped Shipping Company: '{}'", ship.getCompany());
                         ship.setCity(getString(effectiveShippingAddress, "city"));
-                        log.error("DEBUG - Mapped Shipping City: '{}'", ship.getCity());
+                        log.debug("DEBUG - Mapped Shipping City: '{}'", ship.getCity());
                         ship.setZip(getString(effectiveShippingAddress, "zip"));
-                        log.error("DEBUG - Mapped Shipping Zip: '{}'", ship.getZip());
+                        log.debug("DEBUG - Mapped Shipping Zip: '{}'", ship.getZip());
                         ship.setProvince(getString(effectiveShippingAddress, "province"));
-                        log.error("DEBUG - Mapped Shipping Province: '{}'", ship.getProvince());
+                        log.debug("DEBUG - Mapped Shipping Province: '{}'", ship.getProvince());
                         ship.setProvince_name(getString(effectiveShippingAddress, "province_code", ship.getProvince()));
-                        log.error("DEBUG - Mapped Shipping Province Name: '{}'", ship.getProvince_name());
+                        log.debug("DEBUG - Mapped Shipping Province Name: '{}'", ship.getProvince_name());
                         ship.setCountry(getString(effectiveShippingAddress, "country"));
-                        log.error("DEBUG - Mapped Shipping Country: '{}'", ship.getCountry());
+                        log.debug("DEBUG - Mapped Shipping Country: '{}'", ship.getCountry());
                         ship.setPhone(getString(effectiveShippingAddress, "phone"));
-                        log.error("DEBUG - Mapped Shipping Phone: '{}'", ship.getPhone());
+                        log.debug("DEBUG - Mapped Shipping Phone: '{}'", ship.getPhone());
                     } else {
                         log.warn("Pedido {} no tiene shipping_address utilizable (ni en order ni en customer.default_address). Se usará DTO vacío.", (order.getId() != null ? order.getId() : "ID no disponible"));
                     }
                     reg.setShipping_address(ship);
 
-                    JsonObject baJson = null; // Para el billing_address del pedido
+                    JsonObject baJson = null;
                     if (o.has("billing_address") && o.get("billing_address").isJsonObject()) {
                         baJson = o.getAsJsonObject("billing_address");
-                        log.error("DEBUG - Raw order.billing_address JSON para pedido {}: {}", (order.getId() != null ? order.getId() : "N/A"), baJson.toString());
+                        log.debug("DEBUG - Raw order.billing_address JSON para pedido {}: {}", (order.getId() != null ? order.getId() : "N/A"), baJson.toString());
                     }
 
-                    JsonObject effectiveBillingAddress = baJson; // Por defecto, usar el del pedido
+                    JsonObject effectiveBillingAddress = baJson;
                     boolean billingAddressIsBasic = (baJson != null && getString(baJson, "address1").isEmpty() && baJson.has("province") && baJson.has("country"));
 
                     if (effectiveBillingAddress == null || billingAddressIsBasic) {
-                         if (customerDefaultAddressJson != null) { // Si existe default_address y el del pedido es básico o nulo
+                         if (customerDefaultAddressJson != null) {
                             log.info("Usando customer.default_address como billing_address para el pedido {}", order.getId());
                             effectiveBillingAddress = customerDefaultAddressJson;
                         }
@@ -290,27 +289,27 @@ public class ShopifyController {
                     Billing_addressDto bill = new Billing_addressDto();
                     if (effectiveBillingAddress != null) {
                         bill.setName(getString(effectiveBillingAddress, "name", (getString(effectiveBillingAddress,"first_name") + " " + getString(effectiveBillingAddress,"last_name")).trim()));
-                        log.error("DEBUG - Mapped Billing Name: '{}'", bill.getName());
+                        log.debug("DEBUG - Mapped Billing Name: '{}'", bill.getName());
                         String billAddr1 = getString(effectiveBillingAddress, "address1");
                         bill.setStreet(billAddr1);
                         bill.setAddress1(billAddr1);
-                        log.error("DEBUG - Mapped Billing Street/Address1: '{}'", billAddr1);
+                        log.debug("DEBUG - Mapped Billing Street/Address1: '{}'", billAddr1);
                         bill.setAddress2(getString(effectiveBillingAddress, "address2"));
-                        log.error("DEBUG - Mapped Billing Address2: '{}'", bill.getAddress2());
+                        log.debug("DEBUG - Mapped Billing Address2: '{}'", bill.getAddress2());
                         bill.setCompany(getString(effectiveBillingAddress, "company"));
-                        log.error("DEBUG - Mapped Billing Company: '{}'", bill.getCompany());
+                        log.debug("DEBUG - Mapped Billing Company: '{}'", bill.getCompany());
                         bill.setCity(getString(effectiveBillingAddress, "city"));
-                        log.error("DEBUG - Mapped Billing City: '{}'", bill.getCity());
+                        log.debug("DEBUG - Mapped Billing City: '{}'", bill.getCity());
                         bill.setZip(getString(effectiveBillingAddress, "zip"));
-                        log.error("DEBUG - Mapped Billing Zip: '{}'", bill.getZip());
+                        log.debug("DEBUG - Mapped Billing Zip: '{}'", bill.getZip());
                         bill.setProvince(getString(effectiveBillingAddress, "province"));
-                        log.error("DEBUG - Mapped Billing Province: '{}'", bill.getProvince());
+                        log.debug("DEBUG - Mapped Billing Province: '{}'", bill.getProvince());
                         bill.setProvince_name(getString(effectiveBillingAddress, "province_code", bill.getProvince()));
-                        log.error("DEBUG - Mapped Billing Province Name: '{}'", bill.getProvince_name());
+                        log.debug("DEBUG - Mapped Billing Province Name: '{}'", bill.getProvince_name());
                         bill.setCountry(getString(effectiveBillingAddress, "country"));
-                        log.error("DEBUG - Mapped Billing Country: '{}'", bill.getCountry());
+                        log.debug("DEBUG - Mapped Billing Country: '{}'", bill.getCountry());
                         bill.setPhone(getString(effectiveBillingAddress, "phone"));
-                        log.error("DEBUG - Mapped Billing Phone: '{}'", bill.getPhone());
+                        log.debug("DEBUG - Mapped Billing Phone: '{}'", bill.getPhone());
                     } else {
                         log.warn("Pedido {} no tiene billing_address utilizable (ni en order ni en customer.default_address). Se usará DTO vacío.", (order.getId() != null ? order.getId() : "ID no disponible"));
                     }
@@ -335,25 +334,117 @@ public class ShopifyController {
 }
 ```
 
-También he añadido el helper `getString(JsonObject, String, String defaultValue)` que faltaba en la propuesta anterior.
-
-**Cambios en `CargaLayoutComponent.ts`:**
-He comentado las dos líneas de `console.log` que identificaste.
+Ahora, el código en `CargaLayoutComponent.ts` para comentar los `console.log`:
 
 ```typescript
-// En CargaLayoutComponent.ts
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { NbAuthOAuth2JWTToken, NbAuthService } from '@nebular/auth';
+import { NbStepperComponent, NbToastrService } from '@nebular/theme';
+import { PrevisualizacionComponent } from './previsualizacion/previsualizacion.component';
+import { ShopifyService } from '../../services/shopify.service';
+import { RegistroService } from '../../services/registro.service';
 
-// ...
+@Component({
+  selector: 'app-carga-layout',
+  templateUrl: './carga-layout.component.html',
+  styleUrls: ['./carga-layout.component.scss']
+})
+export class CargaLayoutComponent implements OnInit {
+
+  @ViewChild(PrevisualizacionComponent)
+  previsualizacion: PrevisualizacionComponent;
+
+  @ViewChild('stepper')
+  stepper: NbStepperComponent;
+
+  user: any;
+
+  fechaInicio: string;
+  fechaFin: string;
+
+  archivoCargado:any;
+  procesado:boolean = false;
+  tipoCarga: number;
+  resultado: any;
+  errores: any[] = [];
+
+  constructor(
+    private shopifyService: ShopifyService,
+    private authService: NbAuthService,
+    private registroService: RegistroService,
+    private toastrService: NbToastrService
+  ) { }
+
+  ngOnInit(): void {
+    this.authService.onTokenChange().subscribe((token: NbAuthOAuth2JWTToken) => {
+      if (token.isValid()) {
+        this.user = token.getAccessTokenPayload();
+      }
+    });
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = ('0' + (today.getMonth() + 1)).slice(-2);
+    const day = ('0' + today.getDate()).slice(-2);
+
+    this.fechaInicio = `${year}-${month}-${day}`;
+    this.fechaFin = `${year}-${month}-${day}`;
+  }
+
+  setArchivoCargado($event: any) {
+    this.archivoCargado = $event;
+  }
+
+  setProcesado($event: boolean) {
+    this.procesado = $event;
+  }
+
+  setResultado($event: any) {
+    this.resultado = $event;
+    if ($event && $event.respuesta) {
+        if ($event.registrosFallidos > 0 || ($event.registrosOmitidos > 0 && $event.registrosExitosos === 0 && $event.registrosFallidos === 0)) {
+            this.errores = typeof $event.respuesta === 'string' ? $event.respuesta.split('|').map((err: string) => err.trim()) : [];
+        } else {
+            this.errores = [];
+        }
+    } else {
+        this.errores = [];
+    }
+  }
+
+  setErrores($event: any[]) {
+    this.errores = $event;
+  }
+
+  setTipoCarga($event: number) {
+    this.tipoCarga = $event;
+  }
+
   cargarMisEnvios() {
-    // ...
-    // const vendor = this.user.user_name || this.user; // ANTES
-    const vendor = this.user.user_name || this.user.name || this.user.sub; // Ajustar según cómo se almacena el username
+    if (!this.user) {
+      this.toastrService.show('No se pudo obtener la información del usuario.', 'Error', { status: 'danger', duration: 5000 });
+      return;
+    }
+    if (!this.fechaInicio || !this.fechaFin) {
+      this.toastrService.show('Por favor, seleccione fecha de inicio y fin.', 'Advertencia', { status: 'warning', duration: 5000 });
+      return;
+    }
+
+    const vendor = this.user.user_name || this.user.name || this.user.sub;
     if (!vendor) {
         this.toastrService.show('No se pudo determinar el vendor.', 'Error', { status: 'danger', duration: 5000 });
         return;
     }
-    // ...
-    // console.log(`[Shopify API Carga] Solicitando pedidos para vendor: ${vendor}, inicio: ${inicioISO}, fin: ${finISO}`); // Comentado
+
+    const startDate = new Date(this.fechaInicio);
+    startDate.setUTCHours(0, 0, 0, 0);
+    const inicioISO = startDate.toISOString();
+
+    const endDate = new Date(this.fechaFin);
+    endDate.setUTCHours(23, 59, 59, 999);
+    const finISO = endDate.toISOString();
+
+    // console.log(`[Shopify API Carga] Solicitando pedidos para vendor: ${vendor}, inicio: ${inicioISO}, fin: ${finISO}`);
     this.toastrService.info('Obteniendo pedidos de Shopify...', 'Procesando', { duration: 3000 });
     this.procesado = true;
     this.tipoCarga = 0;
@@ -362,39 +453,113 @@ He comentado las dos líneas de `console.log` que identificaste.
 
     this.shopifyService.obtenerOrders(vendor, inicioISO, finISO).subscribe(
       (payloadShopify: any) => {
-        // console.log('[Shopify API Carga] Respuesta de shopifyService.obtenerOrders:', JSON.stringify(payloadShopify)); // Comentado
+        // console.log('[Shopify API Carga] Respuesta de shopifyService.obtenerOrders:', JSON.stringify(payloadShopify));
 
         if (payloadShopify && typeof payloadShopify.registro !== 'undefined') {
-          // ... (resto de la lógica sin cambios)
-// ...
+          if (payloadShopify.registro.length > 0) {
+            this.toastrService.info(`Se encontraron ${payloadShopify.registro.length} pedidos de Shopify. Registrando en la base de datos...`, 'Procesando', { duration: 3000 });
+
+            this.registroService.registrarCarga(payloadShopify).subscribe(
+              (resultadoCarga: any) => {
+                this.setResultado(resultadoCarga);
+                let toastMessage = `Carga API: ${resultadoCarga.registrosExitosos || 0} exitosos, ${resultadoCarga.registrosFallidos || 0} fallidos, ${resultadoCarga.registrosOmitidos || 0} omitidos.`;
+                if (resultadoCarga.registrosFallidos > 0 || (resultadoCarga.registrosOmitidos > 0 && resultadoCarga.registrosExitosos === 0 && resultadoCarga.registrosFallidos === 0)) {
+                    this.toastrService.warning(toastMessage, 'Resultado de Carga', { duration: 8000 });
+                } else {
+                    this.toastrService.success(toastMessage, 'Resultado de Carga', { duration: 5000 });
+                }
+
+                if (this.stepper) {
+                  this.stepper.selectedIndex = 2;
+                }
+                this.procesado = false;
+              },
+              (errorRegistro: any) => {
+                console.error('[Shopify API Carga] Error en registroService.registrarCarga:', errorRegistro);
+                const detailError = errorRegistro.error?.respuesta || errorRegistro.error?.error || errorRegistro.error?.message || errorRegistro.message || 'Error desconocido al registrar.';
+                this.toastrService.danger(`Error al registrar los pedidos: ${detailError}`, 'Error Fatal', { duration: 8000 });
+                this.resultado = {
+                    idCarga: null,
+                    uploadDate: new Date().toISOString(),
+                    registrosExitosos: 0,
+                    registrosFallidos: payloadShopify.registro ? payloadShopify.registro.length : 0,
+                    registrosOmitidos: 0,
+                    respuesta: `Error al registrar pedidos: ${detailError}`,
+                    idVendor: vendor,
+                    tipoCarga: 0
+                };
+                this.setResultado(this.resultado);
+                if (this.stepper) {
+                  this.stepper.selectedIndex = 2;
+                }
+                this.procesado = false;
+              }
+            );
+          } else {
+            this.toastrService.warning('No se encontraron pedidos de Shopify para las fechas seleccionadas.', 'Información', { duration: 5000 });
+            this.resultado = {
+                idCarga: null,
+                uploadDate: new Date().toISOString(),
+                registrosExitosos: 0,
+                registrosFallidos: 0,
+                registrosOmitidos: 0,
+                respuesta: 'No se encontraron pedidos de Shopify para procesar.',
+                idVendor: vendor,
+                tipoCarga: 0
+            };
+            this.setResultado(this.resultado);
+            if (this.stepper) {
+              this.stepper.selectedIndex = 2;
+            }
+            this.procesado = false;
+          }
+        } else {
+          console.error('[Shopify API Carga] La respuesta de obtenerOrders no tiene la estructura esperada:', payloadShopify);
+          this.toastrService.danger('Error al procesar la respuesta de Shopify: estructura inesperada.', 'Error', { duration: 5000 });
+          this.resultado = {
+              idCarga: null,
+              uploadDate: new Date().toISOString(),
+              registrosExitosos: 0,
+              registrosFallidos: 0,
+              registrosOmitidos: 0,
+              respuesta: 'Error: Respuesta inesperada del servidor al obtener pedidos.',
+              idVendor: vendor,
+              tipoCarga: 0
+            };
+          this.setResultado(this.resultado);
+          if (this.stepper) {
+            this.stepper.selectedIndex = 2;
+          }
+          this.procesado = false;
+        }
+      },
+      (errorObtenerOrders: any) => {
+        console.error('[Shopify API Carga] Error en shopifyService.obtenerOrders:', errorObtenerOrders);
+        const errorMessage = errorObtenerOrders.error?.responseMessage || errorObtenerOrders.error?.error || errorObtenerOrders.message || 'Error desconocido al conectar con Shopify.';
+        this.toastrService.danger(`Error al conectar con Shopify: ${errorMessage}`, 'Error', { duration: 8000 });
+        this.resultado = {
+            idCarga: null,
+            uploadDate: new Date().toISOString(),
+            registrosExitosos: 0,
+            registrosFallidos: 0,
+            registrosOmitidos: 0,
+            respuesta: `Error al conectar con Shopify: ${errorMessage}`,
+            idVendor: vendor,
+            tipoCarga: 0
+        };
+        this.setResultado(this.resultado);
+        if (this.stepper) {
+            this.stepper.selectedIndex = 2;
+        }
+        this.procesado = false;
+      }
+    );
+  }
+}
 ```
 
-**Por favor, prueba estos cambios.**
+He aplicado las modificaciones a ambos archivos.
 
-**Mensaje de commit sugerido:**
-```
-Refactor: Clean up debug logs and refine Shopify address mapping
+Con esto, hemos completado la limpieza de logs de depuración y los ajustes finales para la funcionalidad de carga de pedidos de Shopify.
 
-- ShopifyController.java:
-  - Changed verbose DEBUG logs (Shopify API response body, raw address JSONs,
-    and individual mapped address fields) from ERROR level back to DEBUG level.
-  - Maintained INFO level for key operational logs (start of process, number of orders, etc.).
-  - Ensured explicit 'fields' parameter remains for Shopify API calls.
-  - Refined logic for using customer.default_address as a fallback if order-specific
-    addresses are incomplete (specifically checking for empty address1).
-  - Added helper method getString(JsonObject, String, String) for safer JSON field extraction.
-
-- CargaLayoutComponent.ts:
-  - Commented out console.log statements used for debugging Shopify API responses.
-  - Adjusted idVendor retrieval to check user.name and user.sub as fallbacks.
-
-These changes aim to prepare the application for a cleaner logging state
-while retaining the fixes for Shopify order and address data retrieval.
-```
-
-Después de desplegar y probar:
-1.  Verifica que los `console.log` del frontend ya no aparezcan.
-2.  Verifica que los pedidos se sigan cargando correctamente y que la prevención de duplicados funcione.
-3.  Si necesitas depurar más adelante, ahora sabes que puedes cambiar el nivel de log para `com.rocket.service.controller.ShopifyController` a `DEBUG` en la configuración de tu servidor de aplicaciones para ver los logs detallados del mapeo de direcciones y la respuesta de Shopify, sin tener que modificar el código y redesplegar.
-
-Si todo funciona como se espera con estos cambios, podemos marcar este paso del plan como completado.
+Este paso del plan está completo.
