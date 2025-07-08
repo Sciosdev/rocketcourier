@@ -12,7 +12,6 @@ export class Tienda {
   preferenciaPagoFactura?: string;
   email?: string;
   telefono?: string;
-  shopifyApiKey?: string;
   shopifyAccessToken?: string;
   shopifyStoreUrl?: string;
   activo: boolean;
@@ -35,7 +34,6 @@ export class Tienda {
     if (tienda.preferenciaPagoFactura) this.preferenciaPagoFactura = tienda.preferenciaPagoFactura;
     if (tienda.email) this.email = tienda.email;
     if (tienda.telefono) this.telefono = tienda.telefono;
-    if (tienda.shopifyApiKey) this.shopifyApiKey = tienda.shopifyApiKey;
     if (tienda.shopifyAccessToken) this.shopifyAccessToken = tienda.shopifyAccessToken;
     if (tienda.shopifyStoreUrl) this.shopifyStoreUrl = tienda.shopifyStoreUrl;
     if (tienda.activo) this.activo = tienda.activo;

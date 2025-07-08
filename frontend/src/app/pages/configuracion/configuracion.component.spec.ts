@@ -91,7 +91,6 @@ describe('ConfiguracionComponent', () => {
     );
     spyOn(usuarioService, 'obtenerUsuarioCompleto').and.returnValue(of({ tienda: 2 }));
     const cred = {
-      shopifyApiKey: 'key',
       shopifyAccessToken: 'token',
       shopifyStoreUrl: 'url',
     };
@@ -100,7 +99,6 @@ describe('ConfiguracionComponent', () => {
     component.ngOnInit();
 
     expect(credSpy).toHaveBeenCalledWith(2);
-    expect(component.apiKey).toBe('key');
     expect(component.accessToken).toBe('token');
     expect(component.storeUrl).toBe('url');
   });
