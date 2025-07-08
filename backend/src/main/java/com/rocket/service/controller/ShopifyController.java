@@ -117,10 +117,14 @@ public class ShopifyController {
             HttpHeaders headers = new HttpHeaders();
             headers.add("X-Shopify-Access-Token", shopifyAccessToken);
             
-            String fieldsToRequest = "id,name,email,financial_status,created_at,currency,subtotal_price,total_shipping_price_set,shipping_address,billing_address,line_items,note,note_attributes,customer,shipping_lines,processed_at,updated_at,fulfillment_status,cancelled_at";
-            // No incluimos explícitamente sub-campos de shipping_address o billing_address aquí,
-            // ya que Shopify debería devolver el objeto completo si se solicita el objeto padre.
-            // Si esto no funciona, el siguiente paso sería añadir los sub-campos como 'shipping_address.name', etc.
+            String fieldsToRequest = "id,name,email,financial_status,created_at,currency,subtotal_price,total_shipping_price_set,note,note_attributes,customer,shipping_lines,processed_at,updated_at,fulfillment_status,cancelled_at,"
+                                     + "billing_address,shipping_address," // Solicitamos los objetos completos
+                                     // Adicionalmente, podemos intentar especificar sub-campos si lo anterior no funciona, aunque usualmente no es necesario.
+                                     // Para máxima seguridad, incluimos los campos de dirección que vimos en tu Postman y que son validados.
+                                     + "shipping_address.name,shipping_address.first_name,shipping_address.last_name,shipping_address.address1,shipping_address.address2,shipping_address.company,shipping_address.city,shipping_address.zip,shipping_address.province,shipping_address.province_code,shipping_address.country,shipping_address.country_code,shipping_address.phone,"
+                                     + "billing_address.name,billing_address.first_name,billing_address.last_name,billing_address.address1,billing_address.address2,billing_address.company,billing_address.city,billing_address.zip,billing_address.province,billing_address.province_code,billing_address.country,billing_address.country_code,billing_address.phone,"
+                                     + "customer.default_address.name,customer.default_address.first_name,customer.default_address.last_name,customer.default_address.address1,customer.default_address.address2,customer.default_address.company,customer.default_address.city,customer.default_address.zip,customer.default_address.province,customer.default_address.province_code,customer.default_address.country,customer.default_address.country_code,customer.default_address.phone,"
+                                     + "line_items";
 
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(finalShopifyApiUrl)
                                              .queryParam("status", "any")
