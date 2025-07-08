@@ -8,6 +8,7 @@ import javax.validation.constraints.NotNull;
 
 import org.bson.codecs.pojo.annotations.BsonId;
 import org.bson.types.ObjectId;
+import com.fasterxml.jackson.annotation.JsonFormat; // Added import
 
 public class OrderDto {
 	private String id;
@@ -33,7 +34,9 @@ public class OrderDto {
 	private double shipping;
 	// @NotEmpty(message = "shipping_method es un campo requerido") // Puede ser vacío si no hay shipping lines
 	private String shipping_method;
+
 	@NotNull(message = "created_at Es un campo requerido")
+    @com.fasterxml.jackson.annotation.JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
 	private Date created_at;
 	
 	public String getId() {
