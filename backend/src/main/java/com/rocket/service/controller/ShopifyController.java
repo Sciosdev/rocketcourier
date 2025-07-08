@@ -151,8 +151,7 @@ public class ShopifyController {
             }
 
             log.info("Shopify API Response Status: {}", resp.getStatusCode());
-            // No loguear todo el body si puede ser muy grande, solo si es necesario para debug puntual.
-            // log.info("Shopify API Response Body: {}", resp.getBody());
+            log.error("DEBUG - Shopify API Response Body: {}", resp.getBody()); // Cambiado a log.error para depuración
 
             JsonObject obj = JsonParser.parseString(resp.getBody()).getAsJsonObject();
             JsonArray ordersArray = obj.getAsJsonArray("orders");
