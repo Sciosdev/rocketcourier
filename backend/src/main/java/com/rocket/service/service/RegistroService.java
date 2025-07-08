@@ -13,7 +13,7 @@ import com.rocket.service.model.RegistroServiceOutDto;
 import com.rocket.service.repository.RegistroRepository;
 
 import org.bson.types.ObjectId;
-import org.jboss.logging.Logger;
+import org.jboss.logging.Logger; // o import org.slf4j.Logger; import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class RegistroService {
 
-	private final static Logger logger = Logger.getLogger(RegistroService.class);
+	private final static Logger logger = Logger.getLogger(RegistroService.class); // o private static final Logger logger = LoggerFactory.getLogger(RegistroService.class);
 
 	@Autowired
 	RegistroRepository repoRegis;
@@ -161,9 +161,9 @@ public class RegistroService {
 		fromDate.set(Calendar.MINUTE, 0);
 		fromDate.set(Calendar.SECOND, 0);
 
-		logger.debug(toDate);
-		logger.debug(fromDate);
-		logger.debug(courier);
+		logger.debugf("Consulta de registros: Desde %s Hasta %s, Estatus: %d, Courier: %s, Customer: %s",
+            fromDate.getTime(), toDate.getTime(), idEstatus, courier, customer);
+
 
 		List<RegistroServiceOutDto> registros = new ArrayList<>();
 
@@ -194,36 +194,60 @@ public class RegistroService {
 	}
 
 	public String validacion(RegistryDto regis) {
-		String mensaje = " ";
-		if (regis.getOrder().getName() == null || regis.getOrder().getName().isEmpty()
-				|| regis.getOrder().getName().equals("")) {
-			mensaje = mensaje + "Name: es un campo requerido.";
-		}
-		if (regis.getOrder().getFinancial_status() == null || regis.getOrder().getFinancial_status().isEmpty()
-				|| regis.getOrder().getFinancial_status().equals("")) {
-			mensaje = mensaje + "Financial_status: es un campo requerido.";
-		}
-		if (regis.getShipping_address().getName() == null || regis.getShipping_address().getName().isEmpty()
-				|| regis.getShipping_address().getName().equals("")) {
-			mensaje = mensaje + "Name: es un campo requerido.";
-		}
-		if (regis.getShipping_address().getStreet() == null || regis.getShipping_address().getStreet().isEmpty()
-				|| regis.getShipping_address().getStreet().equals("")) {
-			mensaje = mensaje + "Street: es un campo requerido.";
-		}
-		if (regis.getShipping_address().getAddress1() == null || regis.getShipping_address().getAddress1().isEmpty()
-				|| regis.getShipping_address().getAddress1().equals("")) {
-			mensaje = mensaje + "Address1: es un campo requerido.";
-		}
-		if (regis.getShipping_address().getCity() == null || regis.getShipping_address().getCity().isEmpty()
-				|| regis.getShipping_address().getCity().equals("")) {
-			mensaje = mensaje + "City: es un campo requerido.";
-		}
-		
-		if (regis.getShipping_address().getProvince() == null || regis.getShipping_address().getProvince().isEmpty()
-				|| regis.getShipping_address().getProvince().equals("")) {
-			mensaje = mensaje + "Province: es un campo requerido.";
-		}
-		return mensaje;
+		StringBuilder mensaje = new StringBuilder();
+
+        if (regis.getOrder() == null) {
+            mensaje.append("Datos del pedido no pueden ser nulos. ");
+        } else {
+            if (regis.getOrder().getName() == null || regis.getOrder().getName().trim().isEmpty()) {
+                mensaje.append("Order Name: es un campo requerido. ");
+            }
+            if (regis.getOrder().getFinancial_status() == null || regis.getOrder().getFinancial_status().trim().isEmpty()) {
+                mensaje.append("Financial_status: es un campo requerido. ");
+            }
+        }
+
+        if (regis.getShipping_address() == null) {
+            mensaje.append("Shipping Address: no puede ser nulo. ");
+        } else {
+            if (regis.getShipping_address().getName() == null || regis.getShipping_address().getName().trim().isEmpty()) {
+                mensaje.append("Shipping Name: es un campo requerido. ");
+            }
+            if (regis.getShipping_address().getStreet() == null || regis.getShipping_address().getStreet().trim().isEmpty()) {
+                mensaje.append("Shipping Street: es un campo requerido. ");
+            }
+            // Address1 es a menudo el mismo que Street para Shopify, así que la validación puede ser redundante si Street ya es obligatorio.
+            // if (regis.getShipping_address().getAddress1() == null || regis.getShipping_address().getAddress1().trim().isEmpty()) {
+            //     mensaje.append("Shipping Address1: es un campo requerido. ");
+            // }
+            if (regis.getShipping_address().getCity() == null || regis.getShipping_address().getCity().trim().isEmpty()) {
+                mensaje.append("Shipping City: es un campo requerido. ");
+            }
+            if (regis.getShipping_address().getProvince() == null || regis.getShipping_address().getProvince().trim().isEmpty()) {
+                mensaje.append("Shipping Province: es un campo requerido. ");
+            }
+            if (regis.getShipping_address().getZip() == null || regis.getShipping_address().getZip().trim().isEmpty()) {
+                mensaje.append("Shipping Zip: es un campo requerido. ");
+            }
+            if (regis.getShipping_address().getPhone() == null || regis.getShipping_address().getPhone().trim().isEmpty()) {
+                mensaje.append("Shipping Phone: es un campo requerido. ");
+            }
+            if (regis.getShipping_address().getCountry() == null || regis.getShipping_address().getCountry().trim().isEmpty()) {
+                mensaje.append("Shipping Country: es un campo requerido. ");
+            }
+        }
+		return mensaje.toString().trim();
 	}
+
+    public boolean existePedidoShopify(String shopifyOrderId, String idVendorDeCarga) {
+        Query query = new Query();
+        // Comparamos el ID del pedido de Shopify (almacenado en order.id)
+        // y el idVendor (almacenado en order.vendor, que se llena con el idVendor de la carga).
+        query.addCriteria(Criteria.where("order.id").is(shopifyOrderId)
+                              .and("order.vendor").is(idVendorDeCarga));
+        logger.debugf("Verificando si existe pedido Shopify con ID: %s y Vendor: %s", shopifyOrderId, idVendorDeCarga);
+        boolean exists = mongoOperations.exists(query, RegistryDto.class);
+        logger.debugf("Pedido Shopify con ID: %s y Vendor: %s ¿existe?: %s", shopifyOrderId, idVendorDeCarga, exists);
+        return exists;
+    }
 }

@@ -56,7 +56,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@EnableTransactionManagement // Re-habilitamos la gestión de transacciones
+@EnableTransactionManagement
 @Slf4j
 public class TransaccionesRestController {
 
@@ -83,14 +83,14 @@ public class TransaccionesRestController {
 
     @RequestMapping(value = "/registro", method = RequestMethod.POST, produces = {
             "application/json;charset=UTF-8" }, consumes = { "application/json" })
-    public @ResponseBody ResponseEntity<LoadDto> guardarRegistros(@RequestBody RegistroServiceInDto regis) { // Volvemos a RegistroServiceInDto
-        Gson gsonForLog = new GsonBuilder().setPrettyPrinting().create(); // Para loguear bonito si es necesario
-        log.info("Endpoint /registro POST recibido. Payload (deserializado por Jackson): {}", gsonForLog.toJson(regis));
+    public @ResponseBody ResponseEntity<LoadDto> guardarRegistros(@RequestBody RegistroServiceInDto regis) {
+        Gson gsonForLog = new GsonBuilder().setPrettyPrinting().create();
+        log.info("Endpoint /registro POST recibido. Payload: {}", gsonForLog.toJson(regis));
 
         LoadDto regisCarga = new LoadDto();
         List<String> errores = new ArrayList<>();
         EstatusDto estatusInicial = estatusService.obtenerEstatusInicial();
-        Long idCarga;
+        Long idCarga = null;
 
         AtomicInteger exitoso = new AtomicInteger(0);
         AtomicInteger fallido = new AtomicInteger(0);
@@ -103,29 +103,42 @@ public class TransaccionesRestController {
         if (regis.getRegistro() == null || regis.getRegistro().isEmpty()) {
             log.info("La lista de registros en el payload está vacía o es nula.");
             regisCarga.setRespuesta("No se enviaron registros para procesar.");
-            regisCarga.setIdCarga(null);
             return ResponseEntity.ok(regisCarga);
         }
 
         regisCarga.setIdCarga(sequenceGeneratorService.generateSequence(LoadDto.SEQUENCE_NAME));
-        LoadDto inserted = cargaService.guardarCarga(regisCarga); // Guarda la carga inicial
-        idCarga = inserted.getIdCarga();
-        regisCarga.setIdCarga(idCarga); // Asegurar que el DTO de respuesta tenga el idCarga
+        // Guardar la carga inicial ANTES del bucle para tener un idCarga
+        LoadDto insertedCarga = cargaService.guardarCarga(regisCarga);
+        idCarga = insertedCarga.getIdCarga();
+        regisCarga.setIdCarga(idCarga);
 
-        if (regis.getTipoCarga() == 0) { // Shopify API
+        final Long finalIdCarga = idCarga;
+
+        if (regis.getTipoCarga() == 0) { // API de Shopify
             regis.getRegistro().forEach(registro -> {
                 if (registro.getOrder() == null) {
-                    log.warn("Se encontró un RegistryDto con OrderDto nulo para idCarga: {}", idCarga);
+                    log.warn("Se encontró un RegistryDto con OrderDto nulo para idCarga: {}", finalIdCarga);
                     errores.add("Registro inválido: datos del pedido faltantes.");
                     fallido.incrementAndGet();
                     return;
                 }
 
-                // Asegurarse que financial_status no sea null antes de equalsIgnoreCase
+                String shopifyOrderId = registro.getOrder().getId();
+                String orderName = registro.getOrder().getName() != null ? registro.getOrder().getName() : "ID " + shopifyOrderId;
+
+                if (shopifyOrderId != null && !shopifyOrderId.isEmpty()) {
+                    if (registroService.existePedidoShopify(shopifyOrderId, regis.getIdVendor())) {
+                        log.info("Pedido de Shopify {} ({}) para vendor {} ya existe. Omitiendo.", orderName, shopifyOrderId, regis.getIdVendor());
+                        errores.add("Pedido [" + orderName + "] omitido: ya existe.");
+                        omitido.incrementAndGet();
+                        return;
+                    }
+                }
+
                 String financialStatus = registro.getOrder().getFinancial_status();
                 if (financialStatus != null && financialStatus.equalsIgnoreCase("Paid")) {
                     try {
-                        registro.setIdCarga(idCarga);
+                        registro.setIdCarga(finalIdCarga);
                         registro.setId(sequenceGeneratorService.generateSequence(RegistryDto.SEQUENCE_NAME));
                         registro.setIdEstatus(estatusInicial.getId());
                         if (registro.getOrder().getOrderKey() == null) {
@@ -147,35 +160,41 @@ public class TransaccionesRestController {
                             if (insercion != null) {
                                 exitoso.incrementAndGet();
                             } else {
-                                log.error("Error al guardar registro (insercion nula) para orden: {} con idCarga: {}", registro.getOrder().getName(), idCarga);
-                                errores.add("Error en pedido [" + registro.getOrder().getName() + "] : Falla desconocida al guardar.");
+                                log.error("Error al guardar registro (insercion nula) para orden: {} con idCarga: {}", orderName, finalIdCarga);
+                                errores.add("Error en pedido [" + orderName + "] : Falla desconocida al guardar.");
                                 fallido.incrementAndGet();
                             }
                         } else {
-                            log.warn("Validación fallida para el pedido: {} con idCarga: {}. Errores: {}", registro.getOrder().getName(), idCarga, validationError.trim());
-                            errores.add("Error en pedido [" + registro.getOrder().getName() + "] : " + validationError.trim());
+                            log.warn("Validación fallida para el pedido: {} con idCarga: {}. Errores: {}", orderName, finalIdCarga, validationError.trim());
+                            errores.add("Error en pedido [" + orderName + "] : " + validationError.trim());
                             fallido.incrementAndGet();
                         }
                     } catch (Exception e) {
-                        log.error("Excepción procesando pedido: {} con idCarga: {}", registro.getOrder().getName(), idCarga, e);
-                        errores.add("Error en pedido [" + registro.getOrder().getName() + "] : " + e.getMessage());
+                        log.error("Excepción procesando pedido: {} con idCarga: {}", orderName, finalIdCarga, e);
+                        errores.add("Error en pedido [" + orderName + "] : " + e.getMessage());
                         fallido.incrementAndGet();
                     }
                 } else {
-                    log.info("Pedido omitido (financial_status no es 'Paid' o es nulo): {} con idCarga: {}", registro.getOrder().getName(), idCarga);
+                    log.info("Pedido {} omitido (financial_status no es 'Paid' o es nulo: '{}') con idCarga: {}", orderName, financialStatus, finalIdCarga);
                     omitido.incrementAndGet();
                 }
             });
         } else { // Lógica para tipoCarga != 0 (CSV)
             regis.getRegistro().forEach(registro -> {
                 RegistryDto insercion;
+                String rowNum = registro.getRowNumber() != null ? registro.getRowNumber() : "N/A";
+                String orderName = (registro.getOrder() != null && registro.getOrder().getName() != null) ? registro.getOrder().getName() : "Fila " + rowNum;
                 try {
-                    registro.setIdCarga(idCarga);
+                    registro.setIdCarga(finalIdCarga);
                     registro.setId(sequenceGeneratorService.generateSequence(RegistryDto.SEQUENCE_NAME));
                     registro.setIdEstatus(estatusInicial.getId());
                     if (registro.getOrder() != null && registro.getOrder().getOrderKey() == null) {
                        registro.getOrder().setOrderKey(new ObjectId());
                     }
+
+                    // Aquí se podría llamar a registroService.validacion(registro) si se desea la misma validación para CSV
+                    // String validationErrorCSV = registroService.validacion(registro);
+                    // if (validationErrorCSV == null || validationErrorCSV.trim().isEmpty()) { ... }
 
                     EstatusLogDto estatusLog = new EstatusLogDto();
                     estatusLog.setEstatusAnterior(null);
@@ -191,11 +210,11 @@ public class TransaccionesRestController {
                         exitoso.incrementAndGet();
                     } else {
                         fallido.incrementAndGet();
-                         errores.add("Error en fila [" + (registro.getRowNumber() != null ? registro.getRowNumber() : "N/A") + "] : Falla desconocida al guardar (CSV).");
+                         errores.add("Error en fila [" + rowNum + "] ("+orderName+"): Falla desconocida al guardar (CSV).");
                     }
                 } catch (Exception e) {
-                    log.error("Excepción procesando registro CSV para fila [{}], idCarga: {}: ", (registro.getRowNumber() != null ? registro.getRowNumber() : "N/A"), idCarga, e);
-                    errores.add("Error en fila [" + (registro.getRowNumber() != null ? registro.getRowNumber() : "N/A") + "] : " + e.getMessage());
+                    log.error("Excepción procesando registro CSV para fila [{}], pedido {}: ", rowNum, orderName, e);
+                    errores.add("Error en fila [" + rowNum + "] ("+orderName+"): " + e.getMessage());
                     fallido.incrementAndGet();
                 }
             });
@@ -206,26 +225,38 @@ public class TransaccionesRestController {
         regisCarga.setRegistrosOmitidos(omitido.get());
 
         if (errores.isEmpty()) {
-            if (exitoso.get() > 0 || omitido.get() > 0) {
+            if (exitoso.get() > 0) {
                 regisCarga.setRespuesta("Proceso de carga finalizado.");
-            } else if (fallido.get() == 0 && regis.getRegistro() != null && !regis.getRegistro().isEmpty()) {
-                 regisCarga.setRespuesta("No se procesaron registros, revise los logs.");
-            } else if (regis.getRegistro() == null || regis.getRegistro().isEmpty()){
-                 regisCarga.setRespuesta("No se enviaron registros para procesar.");
+            } else if (omitido.get() > 0 && exitoso.get() == 0 && fallido.get() == 0) {
+                regisCarga.setRespuesta("Todos los pedidos ya existían o no cumplieron criterios para ser procesados (ej. no pagados).");
+            } else if (fallido.get() == 0 && omitido.get() == 0 && exitoso.get() == 0 ) {
+                 regisCarga.setRespuesta("No se procesaron registros, revise los logs o los datos de entrada.");
             } else {
-                 regisCarga.setRespuesta("No se procesaron registros.");
+                 regisCarga.setRespuesta("Proceso de carga completado sin errores explícitos, pero sin registros exitosos.");
             }
         } else {
             regisCarga.setRespuesta(StringUtils.join(errores, " | "));
         }
 
         // Actualizar el LoadDto con los contadores finales
-        LoadDto finalLoad = cargaService.guardarCarga(regisCarga);
-        return ResponseEntity.ok(finalLoad);
+        // Solo guardar si hubo alguna actividad o error que valga la pena registrar
+        if (exitoso.get() > 0 || fallido.get() > 0 || omitido.get() > 0) {
+             LoadDto finalLoad = cargaService.guardarCarga(regisCarga);
+             return ResponseEntity.ok(finalLoad);
+        } else {
+            // Si no se procesó nada (ej. lista vacía inicial o todos los pedidos no aplicables sin error)
+            // Devolvemos el regisCarga sin actualizarlo en BD, ya que el 'inserted' inicial podría ser suficiente
+            // o incluso podríamos no querer guardar una carga vacía.
+            // Para consistencia, si se creó un idCarga, lo actualizamos.
+            // Si idCarga es null (porque la lista de entrada estaba vacía), no se guarda.
+            if (regisCarga.getIdCarga() != null) {
+                return ResponseEntity.ok(cargaService.guardarCarga(regisCarga));
+            }
+            return ResponseEntity.ok(regisCarga);
+        }
     }
 
-	private @ResponseBody ResponseEntity<String> obtenerRegistros(Integer idEstatus, List<String> customer,
-			String courier) {
+	private @ResponseBody ResponseEntity<String> obtenerRegistros(Integer idEstatus, List<String> customer, String courier) {
 		List<RegistroServiceOutDto> registros = new ArrayList<RegistroServiceOutDto>();
 		Gson gson = new Gson();
 		String json = "";
@@ -233,22 +264,30 @@ public class TransaccionesRestController {
 
 		if (customer != null && !customer.isEmpty()) {
             cargas = cargaService.consultaCargaVendedor(customer);
-            cargas.forEach(carga -> {
-                List<RegistryDto> regisList;
-                regisList = registroService.consultaRegistroCargaEstatus(carga.getIdCarga(), idEstatus, courier);
-                regisList.forEach(registro -> {
-			RegistroServiceOutDto r = RegistroMapper.mapRegistroCargaToRegistroOut(registro, carga,
-					usuarioService, vendorService, estatusService);
-			registros.add(r);
+            if (cargas != null) {
+                cargas.forEach(carga -> {
+                    List<RegistryDto> regisList;
+                    regisList = registroService.consultaRegistroCargaEstatus(carga.getIdCarga(), idEstatus, courier);
+                    if (regisList != null) {
+                        regisList.forEach(registro -> {
+                            RegistroServiceOutDto r = RegistroMapper.mapRegistroCargaToRegistroOut(registro, carga,
+                                    usuarioService, vendorService, estatusService);
+                            registros.add(r);
+                        });
+                    }
                 });
-            });
+            }
 		} else {
 			List<RegistryDto> temp = registroService.consultaRegistroPorCourierYEstatus(courier, idEstatus);
-			temp.forEach(registro -> {
-				LoadDto carga = cargaService.obtenerCargaPorId(registro.getIdCarga());
-                registros.add(RegistroMapper.mapRegistroCargaToRegistroOut(registro, carga, usuarioService,
-                        vendorService, estatusService));
-			});
+            if (temp != null) {
+                temp.forEach(registro -> {
+                    LoadDto carga = cargaService.obtenerCargaPorId(registro.getIdCarga());
+                    if (registro != null && carga != null) {
+                        registros.add(RegistroMapper.mapRegistroCargaToRegistroOut(registro, carga, usuarioService,
+                                vendorService, estatusService));
+                    }
+                });
+            }
 		}
 
 		json = gson.toJson(registros);
@@ -261,9 +300,11 @@ public class TransaccionesRestController {
 		Gson gson = new Gson();
 		String json = "";
 		users = usuarioService.consultaUsuarioPorRol("Repartidor/Recolector");
-		users.forEach(user -> {
-			user.setPassword(null);
-		});
+        if (users != null) {
+            users.forEach(user -> {
+                user.setPassword(null);
+            });
+        }
 		json = gson.toJson(users);
 		return new ResponseEntity<>(json, HttpStatus.OK);
 	}
@@ -274,9 +315,11 @@ public class TransaccionesRestController {
 		Gson gson = new Gson();
 		String json = "";
 		users = usuarioService.consultaUsuarioPorRol("Courier");
-		users.forEach(user -> {
-			user.setPassword(null);
-		});
+        if (users != null) {
+            users.forEach(user -> {
+                user.setPassword(null);
+            });
+        }
 		json = gson.toJson(users);
 		return new ResponseEntity<>(json, HttpStatus.OK);
 	}
@@ -287,9 +330,11 @@ public class TransaccionesRestController {
 		Gson gson = new Gson();
 		String json = "";
 		users = usuarioService.consultaUsuarioPorRol("Vendedor");
-		users.forEach(user -> {
-			user.setPassword(null);
-		});
+        if (users != null) {
+            users.forEach(user -> {
+                user.setPassword(null);
+            });
+        }
 		json = gson.toJson(users);
 		return new ResponseEntity<>(json, HttpStatus.OK);
 	}
@@ -322,7 +367,7 @@ public class TransaccionesRestController {
                 log.warn("No se encontró registro para la orden {} en solicitarAgenda", schedule.getOrderkey());
                 continue;
             }
-            if (registro.getOrder() == null) { // Defensa contra NPE
+            if (registro.getOrder() == null) {
                 log.warn("OrderDto es nulo para el registro {} en solicitarAgenda", registro.getId());
                 continue;
             }
@@ -357,15 +402,15 @@ public class TransaccionesRestController {
 			registros.add(registro);
 		}
 		List<DBResponse> respuesta = new ArrayList<>();
-		for (RegistryDto registro : registros) {
-			RegistryDto registroResponse = registroService.guardar(registro);
+		for (RegistryDto registroGuardado : registros) {
+			RegistryDto registroResponse = registroService.guardar(registroGuardado);
             DBResponse response = new DBResponse();
 			if (registroResponse != null) {
 				response.setResponse(true);
-				response.setResponseMessage("El registro [" + (registro.getOrder() != null ? registro.getOrder().getName() : registro.getId()) + "] se actualizó éxitosamente");
+				response.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] se actualizó éxitosamente");
 			} else {
 				response.setResponse(false);
-				response.setResponseMessage("El registro [" + (registro.getOrder() != null ? registro.getOrder().getName() : registro.getId()) + "] no se pudo actualizar");
+				response.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] no se pudo actualizar");
 			}
             respuesta.add(response);
 		}
@@ -383,7 +428,7 @@ public class TransaccionesRestController {
                 log.warn("No se encontró registro para la orden {} en aceptarAgenda", schedule.getOrderkey());
                 continue;
             }
-            if (registro.getOrder() == null) { // Defensa contra NPE
+             if (registro.getOrder() == null) {
                 log.warn("OrderDto es nulo para el registro {} en aceptarAgenda", registro.getId());
                 continue;
             }
@@ -411,26 +456,26 @@ public class TransaccionesRestController {
 			ScheduledDto scheduled = registro.getScheduled();
             if (scheduled == null) {
                 scheduled = new ScheduledDto();
+                 registro.setScheduled(scheduled);
             }
 			scheduled.setAccepted(true);
 			scheduled.setIdCourier(schedule.getCourier());
 			if (schedule.getComment() != null && !schedule.getComment().isEmpty()) {
 				scheduled.setComment(schedule.getComment());
 			}
-			registro.setScheduled(scheduled);
 			registro.setIdEstatus(siguiente.getId());
 			registros.add(registro);
 		}
 		List<DBResponse> respuesta = new ArrayList<>();
-		for (RegistryDto registro : registros) {
-			RegistryDto registroResponse = registroService.guardar(registro);
+		for (RegistryDto registroGuardado : registros) {
+			RegistryDto registroResponse = registroService.guardar(registroGuardado);
             DBResponse response = new DBResponse();
 			if (registroResponse != null) {
 				response.setResponse(true);
-				response.setResponseMessage("El registro [" + (registro.getOrder() != null ? registro.getOrder().getName() : registro.getId()) + "] se actualizó éxitosamente");
+				response.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] se actualizó éxitosamente");
 			} else {
 				response.setResponse(false);
-				response.setResponseMessage("El registro [" + (registro.getOrder() != null ? registro.getOrder().getName() : registro.getId()) + "] no se pudo actualizar");
+				response.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] no se pudo actualizar");
 			}
             respuesta.add(response);
 		}
@@ -448,7 +493,7 @@ public class TransaccionesRestController {
                 log.warn("No se encontró registro para la orden {} en rechazarAgenda", scheduleServiceInDto.getOrderkey());
                 continue;
             }
-            if (registro.getOrder() == null) { // Defensa contra NPE
+            if (registro.getOrder() == null) {
                 log.warn("OrderDto es nulo para el registro {} en rechazarAgenda", registro.getId());
                 continue;
             }
@@ -476,24 +521,24 @@ public class TransaccionesRestController {
 			ScheduledDto scheduled = registro.getScheduled();
             if (scheduled == null) {
                 scheduled = new ScheduledDto();
+                registro.setScheduled(scheduled);
             }
 			scheduled.setAccepted(false);
 			scheduled.setComment(scheduleServiceInDto.getComment());
 			scheduled.setScheduledDate(null);
-			registro.setScheduled(scheduled);
 			registro.setIdEstatus(siguiente.getId());
 			registros.add(registro);
 		}
 		List<DBResponse> respuesta = new ArrayList<>();
-		for (RegistryDto registro : registros) {
-			RegistryDto registroResponse = registroService.guardar(registro);
+		for (RegistryDto registroGuardado : registros) {
+			RegistryDto registroResponse = registroService.guardar(registroGuardado);
 			DBResponse response = new DBResponse();
 			if (registroResponse != null) {
 				response.setResponse(true);
-				response.setResponseMessage("El registro [" + (registro.getOrder() != null ? registro.getOrder().getName() : registro.getId()) + "] se actualizó éxitosamente");
+				response.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] se actualizó éxitosamente");
 			} else {
 				response.setResponse(false);
-				response.setResponseMessage("El registro [" + (registro.getOrder() != null ? registro.getOrder().getName() : registro.getId()) + "] no se pudo actualizar");
+				response.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] no se pudo actualizar");
 			}
             respuesta.add(response);
 		}
@@ -539,7 +584,7 @@ public class TransaccionesRestController {
         }
 		Collections.sort(logs);
 		Map<LocalDate, List<EstatusLogDataDto>> result = logs.stream()
-            .filter(log -> log.getFecha() != null) // Filtrar nulos antes de agrupar
+            .filter(logEntry -> logEntry.getFecha() != null)
             .collect(Collectors.groupingBy(item -> convertToLocalDateViaInstant(item.getFecha())
 						.with(TemporalAdjusters.ofDateAdjuster(d -> d))));
 		List<HistoricoDto> historico = new ArrayList<>();
