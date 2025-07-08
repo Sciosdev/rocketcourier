@@ -109,7 +109,7 @@ export class CargaLayoutComponent implements OnInit {
     endDate.setUTCHours(23, 59, 59, 999);
     const finISO = endDate.toISOString();
 
-    console.log(`[Shopify API Carga] Solicitando pedidos para vendor: ${vendor}, inicio: ${inicioISO}, fin: ${finISO}`);
+    // console.log(`[Shopify API Carga] Solicitando pedidos para vendor: ${vendor}, inicio: ${inicioISO}, fin: ${finISO}`);
     this.toastrService.info('Obteniendo pedidos de Shopify...', 'Procesando', { duration: 3000 });
     this.procesado = true;
     this.tipoCarga = 0; // Identificador para carga por API
