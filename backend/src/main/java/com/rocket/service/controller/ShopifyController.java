@@ -117,9 +117,14 @@ public class ShopifyController {
             HttpHeaders headers = new HttpHeaders();
             headers.add("X-Shopify-Access-Token", shopifyAccessToken);
             
+            String fieldsToRequest = "id,name,email,financial_status,created_at,currency,subtotal_price,total_shipping_price_set,shipping_address,billing_address,line_items,note,note_attributes,customer,shipping_lines,processed_at,updated_at,fulfillment_status,cancelled_at";
+            // No incluimos explícitamente sub-campos de shipping_address o billing_address aquí,
+            // ya que Shopify debería devolver el objeto completo si se solicita el objeto padre.
+            // Si esto no funciona, el siguiente paso sería añadir los sub-campos como 'shipping_address.name', etc.
+
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(finalShopifyApiUrl)
                                              .queryParam("status", "any")
-                                             .queryParam("fields", "id,name,email,financial_status,created_at,currency,subtotal_price,total_shipping_price_set,shipping_address,billing_address,line_items,note,note_attributes,customer,shipping_lines,processed_at,updated_at,fulfillment_status,cancelled_at,phone,company,address1,address2,city,zip,province,country,province_code");
+                                             .queryParam("fields", fieldsToRequest);
 
             if (createdAtMin != null && !createdAtMin.trim().isEmpty()) {
                 builder.queryParam("created_at_min", createdAtMin);
