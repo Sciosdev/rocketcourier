@@ -1,12 +1,13 @@
 <nb-card>
   <nb-card-body style="padding: 50px;">
-    <h2 class="mb-4">Carga de Pedidos Shopify</h2>
-    <div class="row mb-3">
-      <div class="col">
+    <h2 class="mb-2">Carga de Pedidos Shopify</h2>
+    <p class="mb-4 text-muted">Selecciona <strong>Cargar mis Pedidos</strong> para obtener tus pedidos desde Shopify.</p>
+    <div class="row mb-3 align-items-end">
+      <div class="col-auto pr-2">
         <label for="fechaInicioInput" class="label date-label">Fecha de Inicio</label>
         <input id="fechaInicioInput" nbInput type="date" placeholder="Fecha inicio" [(ngModel)]="fechaInicio" />
       </div>
-      <div class="col">
+      <div class="col-auto">
         <label for="fechaFinInput" class="label date-label">Fecha de Fin</label>
         <input id="fechaFinInput" nbInput type="date" placeholder="Fecha fin" [(ngModel)]="fechaFin" />
       </div>
@@ -15,5 +16,4 @@
       Cargar mis Pedidos
     </button>
     <app-shopify-result [resultado]="resultado" [errores]="errores" [procesado]="procesado"></app-shopify-result>
-  </nb-card-body>
-</nb-card>
+  </nb-card-body></nb-card>
