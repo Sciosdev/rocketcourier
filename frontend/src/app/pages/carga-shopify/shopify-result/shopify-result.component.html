@@ -19,7 +19,7 @@
       </tr>
       <tr>
         <td>Registros omitidos</td>
-        <td>{{resultado.registrosOmitidos + errores.length}}</td>
+        <td>{{resultado.registrosOmitidos}}</td>
       </tr>
     </tbody>
   </table>
@@ -32,5 +32,4 @@
     <ul>
       <li *ngFor="let column of error.errors">{{column}}</li>
     </ul>
-  </span>
-</nb-alert>
+  </span></nb-alert>
