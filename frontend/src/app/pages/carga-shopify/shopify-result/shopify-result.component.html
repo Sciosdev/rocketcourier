@@ -1,4 +1,5 @@
 <h2>Resultados de la carga</h2>
+<p *ngIf="!resultado && !procesado" class="text-muted">En espera de carga de pedidos</p>
 <nb-alert outline="success" *ngIf="resultado">
   <table class="table">
     <thead class="thead-dark">
@@ -33,8 +34,3 @@
     </ul>
   </span>
 </nb-alert>
-
-<button mat-raised-button color="primary" (click)="finaliza()" type="button" [ngStyle]="{'float':'right'}">
-  <nb-icon icon="arrow-circle-right-outline"></nb-icon>
-  Finalizar
-</button>

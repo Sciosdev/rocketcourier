@@ -8,11 +8,7 @@ import { Component, Input, OnChanges } from '@angular/core';
 export class ShopifyResultComponent implements OnChanges {
   @Input() resultado: any;
   @Input() errores: any[];
+  @Input() procesado = false;
 
   ngOnChanges(): void {}
-
-  finaliza(): void {
-    // TODO: Implement actual finalization logic
-    console.log('finaliza() called');
-  }
 }
