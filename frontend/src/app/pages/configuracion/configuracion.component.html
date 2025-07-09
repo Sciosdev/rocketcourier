@@ -1,6 +1,9 @@
 <nb-card>
   <nb-card-header>Configuración Shopify</nb-card-header>
   <nb-card-body>
+    <p class="text-muted" style="margin-bottom: 1rem;">
+      Si cuentas con el plan básico de Shopify, tu token no funcionará. Se requiere al menos la membresía <b>Grow</b>.
+    </p>
     <form (ngSubmit)="guardar()">
       <div class="form-group">
         <label for="accessToken" class="label">Access Token</label>
