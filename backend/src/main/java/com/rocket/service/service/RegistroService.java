@@ -55,9 +55,18 @@ public class RegistroService {
 		return repoRegis.findAll();
 	}
 
-	public RegistryDto buscarPorOrderKey(ObjectId orderKey) {
-		return repoRegis.findByOrderKey(orderKey);
-	}
+        public RegistryDto buscarPorOrderKey(ObjectId orderKey) {
+                return repoRegis.findByOrderKey(orderKey);
+        }
+
+        public boolean eliminarRegistro(ObjectId orderKey) {
+                RegistryDto registro = repoRegis.findByOrderKey(orderKey);
+                if (registro != null) {
+                        repoRegis.delete(registro);
+                        return true;
+                }
+                return false;
+        }
 
 	public List<RegistryDto> consultaRegistroCargaEstatus(Long idCarga, Integer idEstatus, String courier) {
 		List<RegistryDto> registros = new ArrayList<>();
