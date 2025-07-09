@@ -1,3 +1,9 @@
 @import '../../../themes';
 
 @include nb-install-component {}
+
+.load-button {
+  background-color: #98C14D !important;
+  border-color: #98C14D !important;
+  color: #fff !important;
+}

@@ -10,9 +10,4 @@ export class ShopifyResultComponent implements OnChanges {
   @Input() errores: any[];
 
   ngOnChanges(): void {}
-
-  finaliza(): void {
-    // TODO: Implement actual finalization logic
-    console.log('finaliza() called');
-  }
 }
