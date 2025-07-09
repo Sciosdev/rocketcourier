@@ -29,6 +29,15 @@ export const admin_menu: NbMenuItem[] = [
     },
   },
   {
+    title: 'Carga Shopify',
+    icon: 'shopping-bag-outline',
+    link: '/intranet/carga-shopify',
+    data: {
+      permission: 'menu',
+      resource: ['customer']
+    },
+  },
+  {
     title: 'Consulta de información',
     icon: 'file-text-outline',
     link: '/intranet/consulta-registros',

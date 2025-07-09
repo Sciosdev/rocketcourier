@@ -17,6 +17,7 @@ import {
 import { NbEvaIconsModule } from '@nebular/eva-icons';
 import { ThemeModule } from '../theme/theme.module';
 import { CargaLayoutModule } from './carga-layout/carga-layout.module';
+import { CargaShopifyModule } from './carga-shopify/carga-shopify.module';
 import { NgxLoadingXModule } from 'ngx-loading-x';
 import { ConsultaInformacionModule } from './consulta-informacion/consulta-informacion.module';
 import { NgxSpinnerModule } from 'ngx-spinner';
@@ -32,6 +33,7 @@ import { GlobalAcceptanceComponent } from './common-popups/global-acceptance/glo
     PagesRoutingModule,
     HomeModule,
     CargaLayoutModule,
+    CargaShopifyModule,
     NotFoundModule,
     NbLayoutModule,
     NbSidebarModule,
