@@ -10,4 +10,10 @@ export class ShopifyResultComponent implements OnChanges {
   @Input() errores: any[];
 
   ngOnChanges(): void {}
+
+  finaliza(): void {
+    // Clear results locally. Parent component controls actual state.
+    this.resultado = null;
+    this.errores = [];
+  }
 }
