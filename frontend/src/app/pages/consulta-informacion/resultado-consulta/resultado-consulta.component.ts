@@ -31,6 +31,7 @@ import { EstatusService } from 'src/app/services/estatus.service';
 import { CambioEstatusMultipleComponent } from '../popups/cambio-estatus-multiple/cambio-estatus-multiple.component';
 import { GlobalAcceptanceComponent } from '../../common-popups/global-acceptance/global-acceptance.component';
 import { TipoEstatus } from '../../../models/tipo.estatus.model';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-resultado-consulta',
@@ -818,6 +819,58 @@ export class ResultadoConsultaComponent
                 );
               }
             );
+        } else {
+          this.selection.clear();
+        }
+      });
+  }
+
+  eliminarPedidos() {
+    this.dialogService
+      .open(GlobalAcceptanceComponent, {
+        closeOnBackdropClick: false,
+        closeOnEsc: true,
+        context: {
+          headerMessage: 'Eliminación de pedidos',
+          bodyMessage:
+            '¿Desea eliminar [' +
+            this.selection.selected.length +
+            '] pedido(s)?',
+          acceptanceLabel: 'Si',
+          cancelLabel: 'No',
+        },
+      })
+      .onClose.subscribe((response) => {
+        if (response.accept == true) {
+          const deletes = this.selection.selected.map((register) =>
+            this.registroService.eliminarRegistro(register.orderkey)
+          );
+          this.loading.emit(true);
+          forkJoin(deletes).subscribe(
+            () => {
+              this.selection.selected.forEach((registro) => {
+                this.registros = this.arrayRemove(this.registros, registro);
+              });
+              this.selection.clear();
+              this.dataSource = new MatTableDataSource(this.registros);
+              this.dataSource.paginator = this.paginator;
+              this.loading.emit(false);
+              this.toastrService.success(
+                'Se eliminaron correctamente los pedidos',
+                'Eliminación',
+                { duration: 8000 }
+              );
+            },
+            (error) => {
+              console.error(error);
+              this.loading.emit(false);
+              this.toastrService.danger(
+                'Ocurrió un error al eliminar los pedidos',
+                'Eliminación',
+                { duration: 8000 }
+              );
+            }
+          );
         } else {
           this.selection.clear();
         }

@@ -46,6 +46,12 @@ export class ConfiguracionComponent implements OnInit {
                     );
                   }
                 );
+            } else {
+              this.toastrService.warning(
+                'Aún no tienes una tienda asociada. Contacta a tu administrador.',
+                'Sin tienda',
+                { duration: 8000 }
+              );
             }
           },
           (err) => {
@@ -60,6 +66,11 @@ export class ConfiguracionComponent implements OnInit {
   guardar() {
     if (!this.vendorId) {
       console.error('Vendor ID no disponible');
+      this.toastrService.warning(
+        'No es posible guardar porque no tienes una tienda asociada.',
+        'Sin tienda',
+        { duration: 8000 }
+      );
       return;
     }
     this.saving = true;
