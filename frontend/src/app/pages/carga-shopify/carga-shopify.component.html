@@ -1,5 +1,6 @@
 <nb-card>
   <nb-card-body style="padding: 50px;">
+    <h2 class="mb-4">Carga de Pedidos Shopify</h2>
     <div class="row mb-3">
       <div class="col">
         <label for="fechaInicioInput" class="label">Fecha de Inicio</label>
@@ -10,7 +11,7 @@
         <input id="fechaFinInput" nbInput type="date" placeholder="Fecha fin" [(ngModel)]="fechaFin" />
       </div>
     </div>
-    <button nbButton status="primary" (click)="cargarMisEnvios()" class="mb-4">
+    <button nbButton status="primary" (click)="cargarMisEnvios()" class="mb-4 load-button">
       Cargar mis envíos
     </button>
     <app-shopify-result [resultado]="resultado" [errores]="errores"></app-shopify-result>
