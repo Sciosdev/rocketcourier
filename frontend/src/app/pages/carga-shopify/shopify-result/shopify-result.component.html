@@ -1,0 +1,40 @@
+<h2>Resultados de la carga</h2>
+<nb-alert outline="success" *ngIf="resultado">
+  <table class="table">
+    <thead class="thead-dark">
+      <tr>
+        <th scope="col">Concepto</th>
+        <th scope="col">Valor</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Registros almacenados en base</td>
+        <td>{{resultado.registrosExitosos}}</td>
+      </tr>
+      <tr>
+        <td>Registros con error</td>
+        <td>{{resultado.registrosFallidos}}</td>
+      </tr>
+      <tr>
+        <td>Registros omitidos</td>
+        <td>{{resultado.registrosOmitidos + errores.length}}</td>
+      </tr>
+    </tbody>
+  </table>
+</nb-alert>
+
+<nb-alert outline="danger" *ngIf="errores && false">
+  <span *ngFor="let error of errores">
+    <b>Error en la fila [{{error.rowNumber}}] </b>:
+    Los siguientes campos son requeridos:
+    <ul>
+      <li *ngFor="let column of error.errors">{{column}}</li>
+    </ul>
+  </span>
+</nb-alert>
+
+<button mat-raised-button color="primary" (click)="finaliza()" type="button" [ngStyle]="{'float':'right'}">
+  <nb-icon icon="arrow-circle-right-outline"></nb-icon>
+  Finalizar
+</button>
