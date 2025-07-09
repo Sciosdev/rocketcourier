@@ -8,6 +8,7 @@ import { Component, Input, OnChanges } from '@angular/core';
 export class ShopifyResultComponent implements OnChanges {
   @Input() resultado: any;
   @Input() errores: any[];
+  @Input() procesado = false;
 
   ngOnChanges(): void {}
 }
