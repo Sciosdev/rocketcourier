@@ -20,6 +20,7 @@ import com.rocket.service.service.EstatusService;
 import com.rocket.service.service.RegistroService;
 import com.rocket.service.service.RolService;
 import com.rocket.service.service.UsuarioService;
+import org.bson.types.ObjectId;
 import com.rocket.service.service.VendorService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -153,5 +154,23 @@ public class RegistroController {
 
         json = gson.toJson(groupingEstatusRegistroServiceOutDto);
         return new ResponseEntity<>(json, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/registro/{orderKey}", method = RequestMethod.DELETE, produces = {
+            "application/json;charset=UTF-8" })
+    public ResponseEntity<String> eliminarRegistro(@PathVariable String orderKey) {
+        Gson gson = new Gson();
+        DBResponse response;
+        try {
+            boolean eliminado = registroService.eliminarRegistro(new ObjectId(orderKey));
+            if (eliminado) {
+                response = new DBResponse(true, "Registro eliminado");
+            } else {
+                response = new DBResponse(false, "Registro no encontrado");
+            }
+        } catch (Exception e) {
+            response = new DBResponse(false, "Error al eliminar el registro");
+        }
+        return new ResponseEntity<>(gson.toJson(response), HttpStatus.OK);
     }
 }

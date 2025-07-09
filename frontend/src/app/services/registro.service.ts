@@ -198,6 +198,12 @@ export class RegistroService {
     });
   }
 
+  eliminarRegistro(orderKey: string) {
+    const url = this.URL_SERVICIOS + '/registro/' + orderKey;
+    const options = { headers: this.getHeaders() };
+    return this.http.delete(url, options);
+  }
+
   private getHeaders() {
     let headers = new HttpHeaders({
       'Content-Type': 'application/json',
