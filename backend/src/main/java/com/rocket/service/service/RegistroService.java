@@ -11,6 +11,7 @@ import com.rocket.service.entity.RegistryDto;
 import com.rocket.service.mapper.RegistroMapper;
 import com.rocket.service.model.RegistroServiceOutDto;
 import com.rocket.service.repository.RegistroRepository;
+import com.rocket.service.utils.OrderSource;
 
 import org.bson.types.ObjectId;
 import org.jboss.logging.Logger; // o import org.slf4j.Logger; import org.slf4j.LoggerFactory;
@@ -253,7 +254,8 @@ public class RegistroService {
         // Comparamos el ID del pedido de Shopify (almacenado en order.id)
         // y el idVendor (almacenado en order.vendor, que se llena con el idVendor de la carga).
         query.addCriteria(Criteria.where("order.id").is(shopifyOrderId)
-                              .and("order.vendor").is(idVendorDeCarga));
+                              .and("order.vendor").is(idVendorDeCarga)
+                              .and("order.source").is(OrderSource.SHOPIFY.getValue()));
         logger.debugf("Verificando si existe pedido Shopify con ID: %s y Vendor: %s", shopifyOrderId, idVendorDeCarga);
         boolean exists = mongoOperations.exists(query, RegistryDto.class);
         logger.debugf("Pedido Shopify con ID: %s y Vendor: %s ¿existe?: %s", shopifyOrderId, idVendorDeCarga, exists);

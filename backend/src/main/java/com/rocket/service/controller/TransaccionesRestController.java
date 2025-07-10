@@ -126,7 +126,7 @@ public class TransaccionesRestController {
                 String shopifyOrderId = registro.getOrder().getId();
                 String orderName = registro.getOrder().getName() != null ? registro.getOrder().getName() : "ID " + shopifyOrderId;
 
-                if (shopifyOrderId != null && !shopifyOrderId.isEmpty()) {
+                if (registro.getOrder().isShopifyOrder() && shopifyOrderId != null && !shopifyOrderId.isEmpty()) {
                     if (registroService.existePedidoShopify(shopifyOrderId, regis.getIdVendor())) {
                         log.info("Pedido de Shopify {} ({}) para vendor {} ya existe. Omitiendo.", orderName, shopifyOrderId, regis.getIdVendor());
                         errores.add("Pedido [" + orderName + "] omitido: ya existe.");

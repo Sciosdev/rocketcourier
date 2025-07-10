@@ -9,6 +9,7 @@ import javax.validation.constraints.NotNull;
 import org.bson.codecs.pojo.annotations.BsonId;
 import org.bson.types.ObjectId;
 import com.fasterxml.jackson.annotation.JsonFormat; // Added import
+import com.rocket.service.utils.OrderSource;
 
 public class OrderDto {
 	private String id;
@@ -120,7 +121,11 @@ public class OrderDto {
 	public ObjectId getOrderKey() {
 		return orderKey;
 	}
-	public void setOrderKey(ObjectId orderKey) {
-		this.orderKey = orderKey;
-	}
+        public void setOrderKey(ObjectId orderKey) {
+                this.orderKey = orderKey;
+        }
+
+        public boolean isShopifyOrder() {
+                return OrderSource.SHOPIFY.getValue().equalsIgnoreCase(this.source);
+        }
 }
