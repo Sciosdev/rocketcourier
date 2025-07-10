@@ -7,7 +7,6 @@ import com.rocket.service.entity.VendorDto;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +19,6 @@ class ShopifySyncServiceTest {
     @Mock
     private RestTemplate restTemplate;
 
-    @InjectMocks
     private ShopifySyncService service;
 
     private VendorDto vendor;
@@ -31,6 +29,7 @@ class ShopifySyncServiceTest {
         vendor.setShopifyAccessToken("tkn");
         vendor.setShopifyStoreUrl("https://store.myshopify.com");
         vendor.setShopifyApiVersion("2024-04");
+        service = new ShopifySyncService(restTemplate);
     }
 
     @Test
