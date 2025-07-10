@@ -20,6 +20,7 @@ class ShopifySyncServiceTest {
     @Mock
     private RestTemplate restTemplate;
 
+
     @InjectMocks
     private ShopifySyncService service;
 
@@ -31,6 +32,9 @@ class ShopifySyncServiceTest {
         vendor.setShopifyAccessToken("tkn");
         vendor.setShopifyStoreUrl("https://store.myshopify.com");
         vendor.setShopifyApiVersion("2024-04");
+
+        service = new ShopifySyncService(restTemplate);
+
     }
 
     @Test
