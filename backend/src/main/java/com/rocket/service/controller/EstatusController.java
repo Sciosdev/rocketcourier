@@ -26,6 +26,7 @@ import com.rocket.service.entity.RegistryDto;
 import com.rocket.service.entity.RolDto;
 import com.rocket.service.entity.ScheduledDto;
 import com.rocket.service.entity.UserDto;
+import com.rocket.service.entity.VendorDto;
 import com.rocket.service.mapper.RegistroMapper;
 import com.rocket.service.model.ActualizaEstatusEntregaMultipleOrdersServiceInDto;
 import com.rocket.service.model.ActualizaEstatusOrderMultipleServiceInDto;
@@ -41,6 +42,7 @@ import com.rocket.service.service.RegistroService;
 import com.rocket.service.service.RolService;
 import com.rocket.service.service.UsuarioService;
 import com.rocket.service.service.VendorService;
+import com.rocket.service.service.ShopifySyncService;
 import com.rocket.service.utils.ConfiguracionKey;
 import com.rocket.service.utils.TipoEstatus;
 
@@ -70,6 +72,19 @@ public class EstatusController {
 
     @Autowired
     ConfiguracionService configuracionService;
+
+    @Autowired
+    ShopifySyncService shopifySyncService;
+
+    private VendorDto getVendor(RegistryDto registro) {
+        LoadDto carga = cargaService.obtenerCargaPorId(registro.getIdCarga());
+        List<UserDto> users = usuarioService.consulta(carga.getIdVendor());
+        if (users == null || users.isEmpty()) {
+            return null;
+        }
+        UserDto vendedor = users.get(0);
+        return vendorService.obtenerTiendaPorId(vendedor.getTienda() != null ? vendedor.getTienda().longValue() : null);
+    }
 
     @RequestMapping(value = "/estatus", method = RequestMethod.GET, produces = { "application/json;charset=UTF-8" })
     public @ResponseBody ResponseEntity<String> consultaEstatus() {
@@ -106,6 +121,14 @@ public class EstatusController {
             registro.getScheduled().setIdCourier(actualizaEstatusServiceInDto.getCourier());
 
         RegistryDto response = registroService.guardar(registro);
+
+        if (response.getOrder() != null && response.getOrder().isShopifyOrder()) {
+            VendorDto vendor = getVendor(response);
+            if (vendor != null) {
+                shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
+                shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
+            }
+        }
 
         return new ResponseEntity<>((new Gson()).toJson(response), HttpStatus.OK);
     }
@@ -151,6 +174,13 @@ public class EstatusController {
 
             RegistryDto response = registroService.guardar(registro);
             responses.add(response);
+            if (response.getOrder() != null && response.getOrder().isShopifyOrder()) {
+                VendorDto vendor = getVendor(response);
+                if (vendor != null) {
+                    shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
+                    shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
+                }
+            }
         });
 
         return new ResponseEntity<>((new Gson()).toJson(responses), HttpStatus.OK);
@@ -211,6 +241,13 @@ public class EstatusController {
 
                     response = registroService.guardar(registro);
                     responses.add(response);
+                    if (response.getOrder() != null && response.getOrder().isShopifyOrder()) {
+                        VendorDto vendor = getVendor(response);
+                        if (vendor != null) {
+                            shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
+                            shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
+                        }
+                    }
 
                     Map<String, String> okResponse = new HashMap<>();
                     String message = "El registro [" + orderKey
@@ -302,6 +339,13 @@ public class EstatusController {
                     registro.getScheduled().setIdCourier(actualizaEstatusEntregaMultipleOrdersServiceInDto.getCourier());
 
                 registro = registroService.guardar(registro);
+                if (registro.getOrder() != null && registro.getOrder().isShopifyOrder()) {
+                    VendorDto vendor = getVendor(registro);
+                    if (vendor != null) {
+                        shopifySyncService.createFulfillment(vendor, registro.getOrder().getId());
+                        shopifySyncService.postFulfillmentEvent(vendor, registro.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(registro.getIdEstatus()).getDesc());
+                    }
+                }
 
                 estatusLog = new EstatusLogDto();
                 estatusLog.setEstatusAnterior(configuracionEstatusAsignadoAlCourier.getIntValue());
@@ -323,6 +367,13 @@ public class EstatusController {
                 RegistryDto response = registroService.guardar(registro);
 
                 responses.add(response);
+                if (response.getOrder() != null && response.getOrder().isShopifyOrder()) {
+                    VendorDto vendor = getVendor(response);
+                    if (vendor != null) {
+                        shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
+                        shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
+                    }
+                }
 
                 Map<String, String> okResponse = new HashMap<>();
                 String message = "El registro [" + orderKey
@@ -396,6 +447,14 @@ public class EstatusController {
 
         RegistryDto response = registroService.guardar(registro);
 
+        if (response.getOrder() != null && response.getOrder().isShopifyOrder()) {
+            VendorDto vendor = getVendor(response);
+            if (vendor != null) {
+                shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
+                shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
+            }
+        }
+
         return new ResponseEntity<>((new Gson()).toJson(response), HttpStatus.OK);
     }
 
@@ -438,6 +497,13 @@ public class EstatusController {
                 RegistroServiceOutDto res = RegistroMapper.mapRegistroCargaToRegistroOut(r, carga, usuarioService,
                         vendorService, estatusService);
                 response.add(res);
+                if (r.getOrder() != null && r.getOrder().isShopifyOrder()) {
+                    VendorDto vendor = getVendor(r);
+                    if (vendor != null) {
+                        shopifySyncService.createFulfillment(vendor, r.getOrder().getId());
+                        shopifySyncService.postFulfillmentEvent(vendor, r.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(r.getIdEstatus()).getDesc());
+                    }
+                }
             } catch (Exception e) {
                 log.error(e.toString());
             }
@@ -481,6 +547,13 @@ public class EstatusController {
                 RegistroServiceOutDto res = RegistroMapper.mapRegistroCargaToRegistroOut(r, carga, usuarioService,
                         vendorService, estatusService);
                 response.add(res);
+                if (r.getOrder() != null && r.getOrder().isShopifyOrder()) {
+                    VendorDto vendor = getVendor(r);
+                    if (vendor != null) {
+                        shopifySyncService.createFulfillment(vendor, r.getOrder().getId());
+                        shopifySyncService.postFulfillmentEvent(vendor, r.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(r.getIdEstatus()).getDesc());
+                    }
+                }
             } catch (Exception e) {
                 log.error(e.toString());
             }

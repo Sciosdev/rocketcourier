@@ -18,6 +18,7 @@ public class VendorServiceDto {
         private String telefono;
         private String shopifyAccessToken;
         private String shopifyStoreUrl;
+        private String shopifyApiVersion;
         private String logo;
     private Boolean activo;
 
@@ -190,6 +191,14 @@ public class VendorServiceDto {
 
     public void setShopifyStoreUrl(String shopifyStoreUrl) {
         this.shopifyStoreUrl = shopifyStoreUrl;
+    }
+
+    public String getShopifyApiVersion() {
+        return shopifyApiVersion;
+    }
+
+    public void setShopifyApiVersion(String shopifyApiVersion) {
+        this.shopifyApiVersion = shopifyApiVersion;
     }
 
     /**
