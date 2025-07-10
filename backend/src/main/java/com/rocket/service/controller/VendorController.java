@@ -81,6 +81,7 @@ public class VendorController {
                 VendorCredentialsDto cred = new VendorCredentialsDto();
                 cred.setShopifyAccessToken(vendorDto.getShopifyAccessToken());
                 cred.setShopifyStoreUrl(vendorDto.getShopifyStoreUrl());
+                cred.setShopifyApiVersion(vendorDto.getShopifyApiVersion());
 
                 Gson gson = new Gson();
                 String json = gson.toJson(cred);
@@ -90,7 +91,7 @@ public class VendorController {
         @RequestMapping(value = "/vendor/{id}/shopify", method = RequestMethod.PUT, produces = { "application/json;charset=UTF-8" })
         public ResponseEntity<String> actualizarCredencialesShopify(@PathVariable Long id, @RequestBody VendorCredentialsDto cred) {
                 VendorDto vendorDto = service.obtenerTiendaPorId(id);
-                service.actualizarCredencialesShopify(vendorDto, cred.getShopifyAccessToken(), cred.getShopifyStoreUrl());
+                service.actualizarCredencialesShopify(vendorDto, cred.getShopifyAccessToken(), cred.getShopifyStoreUrl(), cred.getShopifyApiVersion());
 
                 Gson gson = new Gson();
                 String json = gson.toJson(new DBResponse(true, "Credenciales actualizadas"));
