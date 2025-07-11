@@ -125,8 +125,14 @@ public class EstatusController {
         if (response.getOrder() != null && response.getOrder().isShopifyOrder()) {
             VendorDto vendor = getVendor(response);
             if (vendor != null) {
-                shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
-                shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
+                String fid = null;
+                if (response.getOrder().getFulfillmentOrderId() != null) {
+                    fid = shopifySyncService.createFulfillmentWithTracking(vendor, response.getOrder(), "https://main.d3je47rbud1pwk.amplifyapp.com");
+                    registroService.guardar(response);
+                } else {
+                    shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
+                }
+                shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), fid != null ? fid : "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
             }
         }
 
@@ -177,8 +183,14 @@ public class EstatusController {
             if (response.getOrder() != null && response.getOrder().isShopifyOrder()) {
                 VendorDto vendor = getVendor(response);
                 if (vendor != null) {
-                    shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
-                    shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
+                    String fid = null;
+                    if (response.getOrder().getFulfillmentOrderId() != null) {
+                        fid = shopifySyncService.createFulfillmentWithTracking(vendor, response.getOrder(), "https://main.d3je47rbud1pwk.amplifyapp.com");
+                        registroService.guardar(response);
+                    } else {
+                        shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
+                    }
+                    shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), fid != null ? fid : "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
                 }
             }
         });
@@ -244,8 +256,14 @@ public class EstatusController {
                     if (response.getOrder() != null && response.getOrder().isShopifyOrder()) {
                         VendorDto vendor = getVendor(response);
                         if (vendor != null) {
-                            shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
-                            shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
+                    String fid = null;
+                    if (response.getOrder().getFulfillmentOrderId() != null) {
+                        fid = shopifySyncService.createFulfillmentWithTracking(vendor, response.getOrder(), "https://main.d3je47rbud1pwk.amplifyapp.com");
+                        registroService.guardar(response);
+                    } else {
+                        shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
+                    }
+                    shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), fid != null ? fid : "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
                         }
                     }
 
@@ -342,8 +360,14 @@ public class EstatusController {
                 if (registro.getOrder() != null && registro.getOrder().isShopifyOrder()) {
                     VendorDto vendor = getVendor(registro);
                     if (vendor != null) {
+                    String fid = null;
+                    if (registro.getOrder().getFulfillmentOrderId() != null) {
+                        fid = shopifySyncService.createFulfillmentWithTracking(vendor, registro.getOrder(), "https://main.d3je47rbud1pwk.amplifyapp.com");
+                        registroService.guardar(registro);
+                    } else {
                         shopifySyncService.createFulfillment(vendor, registro.getOrder().getId());
-                        shopifySyncService.postFulfillmentEvent(vendor, registro.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(registro.getIdEstatus()).getDesc());
+                    }
+                    shopifySyncService.postFulfillmentEvent(vendor, registro.getOrder().getId(), fid != null ? fid : "0", estatusService.obtenerEstatusPorId(registro.getIdEstatus()).getDesc());
                     }
                 }
 
@@ -370,8 +394,14 @@ public class EstatusController {
                 if (response.getOrder() != null && response.getOrder().isShopifyOrder()) {
                     VendorDto vendor = getVendor(response);
                     if (vendor != null) {
+                    String fid = null;
+                    if (response.getOrder().getFulfillmentOrderId() != null) {
+                        fid = shopifySyncService.createFulfillmentWithTracking(vendor, response.getOrder(), "https://main.d3je47rbud1pwk.amplifyapp.com");
+                        registroService.guardar(response);
+                    } else {
                         shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
-                        shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
+                    }
+                    shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), fid != null ? fid : "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
                     }
                 }
 
@@ -450,8 +480,14 @@ public class EstatusController {
         if (response.getOrder() != null && response.getOrder().isShopifyOrder()) {
             VendorDto vendor = getVendor(response);
             if (vendor != null) {
-                shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
-                shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
+                String fid = null;
+                if (response.getOrder().getFulfillmentOrderId() != null) {
+                    fid = shopifySyncService.createFulfillmentWithTracking(vendor, response.getOrder(), "https://main.d3je47rbud1pwk.amplifyapp.com");
+                    registroService.guardar(response);
+                } else {
+                    shopifySyncService.createFulfillment(vendor, response.getOrder().getId());
+                }
+                shopifySyncService.postFulfillmentEvent(vendor, response.getOrder().getId(), fid != null ? fid : "0", estatusService.obtenerEstatusPorId(response.getIdEstatus()).getDesc());
             }
         }
 
@@ -500,8 +536,14 @@ public class EstatusController {
                 if (r.getOrder() != null && r.getOrder().isShopifyOrder()) {
                     VendorDto vendor = getVendor(r);
                     if (vendor != null) {
-                        shopifySyncService.createFulfillment(vendor, r.getOrder().getId());
-                        shopifySyncService.postFulfillmentEvent(vendor, r.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(r.getIdEstatus()).getDesc());
+                        String fid = null;
+                        if (r.getOrder().getFulfillmentOrderId() != null) {
+                            fid = shopifySyncService.createFulfillmentWithTracking(vendor, r.getOrder(), "https://main.d3je47rbud1pwk.amplifyapp.com");
+                            registroService.guardar(r);
+                        } else {
+                            shopifySyncService.createFulfillment(vendor, r.getOrder().getId());
+                        }
+                        shopifySyncService.postFulfillmentEvent(vendor, r.getOrder().getId(), fid != null ? fid : "0", estatusService.obtenerEstatusPorId(r.getIdEstatus()).getDesc());
                     }
                 }
             } catch (Exception e) {
@@ -550,8 +592,14 @@ public class EstatusController {
                 if (r.getOrder() != null && r.getOrder().isShopifyOrder()) {
                     VendorDto vendor = getVendor(r);
                     if (vendor != null) {
-                        shopifySyncService.createFulfillment(vendor, r.getOrder().getId());
-                        shopifySyncService.postFulfillmentEvent(vendor, r.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(r.getIdEstatus()).getDesc());
+                        String fid = null;
+                        if (r.getOrder().getFulfillmentOrderId() != null) {
+                            fid = shopifySyncService.createFulfillmentWithTracking(vendor, r.getOrder(), "https://main.d3je47rbud1pwk.amplifyapp.com");
+                            registroService.guardar(r);
+                        } else {
+                            shopifySyncService.createFulfillment(vendor, r.getOrder().getId());
+                        }
+                        shopifySyncService.postFulfillmentEvent(vendor, r.getOrder().getId(), fid != null ? fid : "0", estatusService.obtenerEstatusPorId(r.getIdEstatus()).getDesc());
                     }
                 }
             } catch (Exception e) {
