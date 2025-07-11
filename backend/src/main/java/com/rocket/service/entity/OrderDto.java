@@ -34,7 +34,12 @@ public class OrderDto {
 	// @NotEmpty es incorrecto para double. Si se requiere que no sea cero, usar @Min(0) o validación lógica.
 	private double shipping;
 	// @NotEmpty(message = "shipping_method es un campo requerido") // Puede ser vacío si no hay shipping lines
-	private String shipping_method;
+        private String shipping_method;
+
+        // Shopify fulfillment metadata
+        private String fulfillmentOrderId;
+        private String fulfillmentLineItemId;
+        private Integer fulfillmentLineItemQty;
 
 	@NotNull(message = "created_at Es un campo requerido")
     @com.fasterxml.jackson.annotation.JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
@@ -109,12 +114,36 @@ public class OrderDto {
 	public String getShipping_method() {
 		return shipping_method;
 	}
-	public void setShipping_method(String shipping_method) {
-		this.shipping_method = shipping_method;
-	}
-	public Date getCreated_at() {
-		return created_at;
-	}
+        public void setShipping_method(String shipping_method) {
+                this.shipping_method = shipping_method;
+        }
+
+        public String getFulfillmentOrderId() {
+                return fulfillmentOrderId;
+        }
+
+        public void setFulfillmentOrderId(String fulfillmentOrderId) {
+                this.fulfillmentOrderId = fulfillmentOrderId;
+        }
+
+        public String getFulfillmentLineItemId() {
+                return fulfillmentLineItemId;
+        }
+
+        public void setFulfillmentLineItemId(String fulfillmentLineItemId) {
+                this.fulfillmentLineItemId = fulfillmentLineItemId;
+        }
+
+        public Integer getFulfillmentLineItemQty() {
+                return fulfillmentLineItemQty;
+        }
+
+        public void setFulfillmentLineItemQty(Integer fulfillmentLineItemQty) {
+                this.fulfillmentLineItemQty = fulfillmentLineItemQty;
+        }
+        public Date getCreated_at() {
+                return created_at;
+        }
 	public void setCreated_at(Date created_at) {
 		this.created_at = created_at;
 	}

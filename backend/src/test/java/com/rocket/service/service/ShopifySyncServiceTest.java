@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.rocket.service.entity.VendorDto;
 
@@ -18,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestTemplate;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,5 +66,15 @@ class ShopifySyncServiceTest {
 
         verify(restTemplate).postForEntity(anyString(), any(HttpEntity.class), eq(String.class));
 
+    }
+
+    @Test
+    void testFetchFulfillmentDataCallsShopify() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(String.class)))
+            .thenReturn(org.springframework.http.ResponseEntity.ok("{\"fulfillment_orders\":[{\"id\":1,\"line_items\":[{\"id\":2,\"quantity\":1}]}]}"));
+
+        service.fetchFulfillmentData(vendor, "123");
+
+        verify(restTemplate).exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(String.class));
     }
 }

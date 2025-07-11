@@ -4,7 +4,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import com.rocket.service.entity.VendorDto;
+import com.rocket.service.model.ShopifyFulfillmentData;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,5 +85,35 @@ public class ShopifySyncService {
         body.put("event", event);
         log.debug("Calling Shopify fulfillment event: {}", url);
         restTemplate.postForEntity(url, new HttpEntity<>(body, defaultHeaders(vendor)), String.class);
+    }
+
+    public ShopifyFulfillmentData fetchFulfillmentData(VendorDto vendor, String orderId) {
+        String url = baseUrl(vendor) + "/orders/" + orderId + "/fulfillment_orders.json";
+        log.debug("Fetching Shopify fulfillment data: {}", url);
+        String response = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET,
+                new HttpEntity<>(defaultHeaders(vendor)), String.class).getBody();
+        if (response == null) {
+            return null;
+        }
+        try {
+            JsonObject obj = JsonParser.parseString(response).getAsJsonObject();
+            JsonArray arr = obj.getAsJsonArray("fulfillment_orders");
+            if (arr != null && arr.size() > 0) {
+                JsonObject fo = arr.get(0).getAsJsonObject();
+                String fId = fo.get("id").getAsString();
+                JsonArray li = fo.getAsJsonArray("line_items");
+                if (li != null && li.size() > 0) {
+                    JsonObject item = li.get(0).getAsJsonObject();
+                    String liId = item.get("id").getAsString();
+                    int qty = item.get("quantity").getAsInt();
+                    return new ShopifyFulfillmentData(fId, liId, qty);
+                } else {
+                    return new ShopifyFulfillmentData(fId, null, null);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error parsing Shopify fulfillment data", e);
+        }
+        return null;
     }
 }

@@ -21,6 +21,7 @@ import com.rocket.service.entity.LoadDto;
 import com.rocket.service.entity.RegistryDto;
 import com.rocket.service.entity.ScheduledDto;
 import com.rocket.service.entity.UserDto;
+import com.rocket.service.entity.VendorDto;
 import com.rocket.service.mapper.EstatusMapper;
 import com.rocket.service.mapper.RegistroMapper;
 import com.rocket.service.model.DBResponse;
@@ -30,6 +31,7 @@ import com.rocket.service.model.HistoricoDto;
 import com.rocket.service.model.RegistroServiceInDto;
 import com.rocket.service.model.RegistroServiceOutDto;
 import com.rocket.service.model.ScheduleServiceInDto;
+import com.rocket.service.model.ShopifyFulfillmentData;
 import com.rocket.service.service.CargaService;
 import com.rocket.service.service.EstatusService;
 import com.rocket.service.service.RegistroService;
@@ -37,6 +39,7 @@ import com.rocket.service.service.RolService;
 import com.rocket.service.service.SequenceGeneratorService;
 import com.rocket.service.service.UsuarioService;
 import com.rocket.service.service.VendorService;
+import com.rocket.service.service.ShopifySyncService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -77,6 +80,19 @@ public class TransaccionesRestController {
 
     @Autowired
     VendorService vendorService;
+
+    @Autowired
+    ShopifySyncService shopifySyncService;
+
+    private VendorDto getVendor(RegistryDto registro) {
+        LoadDto carga = cargaService.obtenerCargaPorId(registro.getIdCarga());
+        List<UserDto> users = usuarioService.consulta(carga.getIdVendor());
+        if (users == null || users.isEmpty()) {
+            return null;
+        }
+        UserDto vendedor = users.get(0);
+        return vendorService.obtenerTiendaPorId(vendedor.getTienda() != null ? vendedor.getTienda().longValue() : null);
+    }
 
     @Autowired
     SequenceGeneratorService sequenceGeneratorService;
@@ -458,14 +474,27 @@ public class TransaccionesRestController {
                 scheduled = new ScheduledDto();
                  registro.setScheduled(scheduled);
             }
-			scheduled.setAccepted(true);
-			scheduled.setIdCourier(schedule.getCourier());
-			if (schedule.getComment() != null && !schedule.getComment().isEmpty()) {
-				scheduled.setComment(schedule.getComment());
-			}
-			registro.setIdEstatus(siguiente.getId());
-			registros.add(registro);
-		}
+                        scheduled.setAccepted(true);
+                        scheduled.setIdCourier(schedule.getCourier());
+                        if (schedule.getComment() != null && !schedule.getComment().isEmpty()) {
+                                scheduled.setComment(schedule.getComment());
+                        }
+                        registro.setIdEstatus(siguiente.getId());
+
+                        if (registro.getOrder() != null && registro.getOrder().isShopifyOrder()) {
+                            VendorDto vendor = getVendor(registro);
+                            if (vendor != null) {
+                                ShopifyFulfillmentData data = shopifySyncService.fetchFulfillmentData(vendor, registro.getOrder().getId());
+                                if (data != null) {
+                                    registro.getOrder().setFulfillmentOrderId(data.getFulfillmentOrderId());
+                                    registro.getOrder().setFulfillmentLineItemId(data.getLineItemId());
+                                    registro.getOrder().setFulfillmentLineItemQty(data.getQuantity());
+                                }
+                            }
+                        }
+
+                        registros.add(registro);
+                }
 		List<DBResponse> respuesta = new ArrayList<>();
 		for (RegistryDto registroGuardado : registros) {
 			RegistryDto registroResponse = registroService.guardar(registroGuardado);
