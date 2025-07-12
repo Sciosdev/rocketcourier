@@ -40,6 +40,7 @@ public class OrderDto {
         private String fulfillmentOrderId;
         private String fulfillmentLineItemId;
         private Integer fulfillmentLineItemQty;
+        private String shopifyFulfillmentId; // Nuevo campo para el ID de fulfillment de Shopify
 
 	@NotNull(message = "created_at Es un campo requerido")
     @com.fasterxml.jackson.annotation.JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
@@ -140,6 +141,12 @@ public class OrderDto {
 
         public void setFulfillmentLineItemQty(Integer fulfillmentLineItemQty) {
                 this.fulfillmentLineItemQty = fulfillmentLineItemQty;
+        }
+        public String getShopifyFulfillmentId() {
+                return shopifyFulfillmentId;
+        }
+        public void setShopifyFulfillmentId(String shopifyFulfillmentId) {
+                this.shopifyFulfillmentId = shopifyFulfillmentId;
         }
         public Date getCreated_at() {
                 return created_at;

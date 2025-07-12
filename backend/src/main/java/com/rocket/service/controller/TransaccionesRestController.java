@@ -377,29 +377,44 @@ public class TransaccionesRestController {
 			"application/json;charset=UTF-8" })
 	public @ResponseBody ResponseEntity<String> solicitarAgenda(@RequestBody List<ScheduleServiceInDto> scheduleList) {
 		List<RegistryDto> registros = new ArrayList<>();
+		List<DBResponse> respuesta = new ArrayList<>();
+
+		// IDs de estatus relevantes y URL base de Rocket
+		final Integer ID_ESTATUS_AGENDA_ACEPTADA_PENDIENTE_RECOLECCION = 3;
+		final Integer ID_ESTATUS_RECOLECTADO = 6;
+		final String ROCKET_BASE_URL = "https://main.d3je47rbud1pwk.amplifyapp.com";
+
 		for (ScheduleServiceInDto schedule : scheduleList) {
 			RegistryDto registro = registroService.buscarPorOrderKey(new ObjectId(schedule.getOrderkey()));
             if (registro == null) {
                 log.warn("No se encontró registro para la orden {} en solicitarAgenda", schedule.getOrderkey());
+                respuesta.add(new DBResponse(false, "No se encontró registro para la orden " + schedule.getOrderkey()));
                 continue;
             }
             if (registro.getOrder() == null) {
                 log.warn("OrderDto es nulo para el registro {} en solicitarAgenda", registro.getId());
+                respuesta.add(new DBResponse(false, "Datos de la orden incompletos para el registro " + registro.getId()));
                 continue;
             }
 			EstatusDto actual = estatusService.obtenerEstatusPorId(registro.getIdEstatus());
             if (actual == null) {
                 log.warn("No se encontró estatus actual para el registro {} con idEstatus {}", registro.getId(), registro.getIdEstatus());
+                respuesta.add(new DBResponse(false, "No se encontró estatus actual para el registro " + registro.getId()));
                 continue;
             }
 			EstatusDto siguiente = estatusService.obtenerEstatusSiguiente(actual);
             if (siguiente == null) {
                 log.warn("No se encontró estatus siguiente para el estatus actual {}", actual.getId());
+                respuesta.add(new DBResponse(false, "No se pudo determinar el siguiente estatus para el registro " + registro.getId()));
                 continue;
             }
+
+			Integer idEstatusOriginal = actual.getId();
+			Integer idEstatusNuevo = siguiente.getId();
+
 			EstatusLogDto estatusLog = new EstatusLogDto();
-			estatusLog.setEstatusAnterior(actual.getId());
-			estatusLog.setEstatusActual(siguiente.getId());
+			estatusLog.setEstatusAnterior(idEstatusOriginal);
+			estatusLog.setEstatusActual(idEstatusNuevo);
 			estatusLog.setFechaActualizacion(new Date());
 			estatusLog.setUsuario(schedule.getUser());
 			List<EstatusLogDto> estatusLogList = registro.getEstatusLog();
@@ -408,27 +423,72 @@ public class TransaccionesRestController {
             }
 			estatusLogList.add(estatusLog);
 			registro.setEstatusLog(estatusLogList);
-			ScheduledDto scheduled = new ScheduledDto();
-			scheduled.setScheduledDate(schedule.getScheduledDate());
-			scheduled.setIdVendor(schedule.getVendor());
-			scheduled.setComment(schedule.getComment());
-			scheduled.setAccepted(false);
-			registro.setScheduled(scheduled);
-			registro.setIdEstatus(siguiente.getId());
+
+			ScheduledDto scheduled = registro.getScheduled(); // Intentar obtener el existente
+			if (scheduled == null) { // Si no existe, crear uno nuevo
+				scheduled = new ScheduledDto();
+				registro.setScheduled(scheduled);
+			}
+            // Actualizar campos del schedule según la información recibida
+            // Estos campos podrían ser opcionales si el Courier solo cambia el estado
+            if (schedule.getScheduledDate() != null) {
+                scheduled.setScheduledDate(schedule.getScheduledDate());
+            }
+            if (schedule.getVendor() != null) { // Generalmente el vendor no cambia en este punto por el Courier
+                scheduled.setIdVendor(schedule.getVendor());
+            }
+            if (schedule.getComment() != null && !schedule.getComment().isEmpty()) {
+                scheduled.setComment(schedule.getComment());
+            }
+            // 'accepted' podría no ser relevante aquí si el Courier solo está recolectando
+            // scheduled.setAccepted(false); // O el valor que corresponda
+
+			registro.setIdEstatus(idEstatusNuevo);
+
+			// ---> INICIO DE LA NUEVA LÓGICA DE SHOPIFY <---
+			if (registro.getOrder().isShopifyOrder() &&
+				ID_ESTATUS_AGENDA_ACEPTADA_PENDIENTE_RECOLECCION.equals(idEstatusOriginal) &&
+				ID_ESTATUS_RECOLECTADO.equals(idEstatusNuevo)) {
+
+				VendorDto vendor = getVendor(registro);
+				if (vendor != null && vendor.getShopifyStoreUrl() != null && vendor.getShopifyAccessToken() != null) {
+					log.info("Pedido Shopify {} cambiando de estado {} a {}. Intentando crear fulfillment con tracking.",
+							 registro.getOrder().getOrderKey() != null ? registro.getOrder().getOrderKey().toString() : registro.getOrder().getId(),
+							 idEstatusOriginal, idEstatusNuevo);
+
+					String shopifyFulfillmentId = shopifySyncService.createFulfillmentWithTracking(vendor, registro, ROCKET_BASE_URL);
+
+					if (shopifyFulfillmentId != null && !shopifyFulfillmentId.isEmpty()) {
+						registro.getOrder().setShopifyFulfillmentId(shopifyFulfillmentId);
+						log.info("Fulfillment de Shopify creado con ID {} para orderKey {}", shopifyFulfillmentId,
+								 registro.getOrder().getOrderKey() != null ? registro.getOrder().getOrderKey().toString() : registro.getOrder().getId());
+					} else {
+						log.warn("No se pudo crear/obtener el fulfillment ID de Shopify para orderKey {}",
+								 registro.getOrder().getOrderKey() != null ? registro.getOrder().getOrderKey().toString() : registro.getOrder().getId());
+						// Considerar añadir un mensaje específico a la 'respuesta' para este pedido.
+					}
+				} else {
+					log.warn("No se puede sincronizar con Shopify para orderKey {}: Vendor o configuración de Shopify faltante.",
+							 registro.getOrder().getOrderKey() != null ? registro.getOrder().getOrderKey().toString() : registro.getOrder().getId());
+				}
+			}
+			// ---> FIN DE LA NUEVA LÓGICA DE SHOPIFY <---
+
 			registros.add(registro);
-		}
-		List<DBResponse> respuesta = new ArrayList<>();
+		} // Fin del bucle for
+
+		// Guardar todos los registros modificados y construir la respuesta
 		for (RegistryDto registroGuardado : registros) {
 			RegistryDto registroResponse = registroService.guardar(registroGuardado);
-            DBResponse response = new DBResponse();
+            DBResponse responseItem = new DBResponse(); // Renombrado para evitar confusión con la lista 'respuesta'
 			if (registroResponse != null) {
-				response.setResponse(true);
-				response.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] se actualizó éxitosamente");
+				responseItem.setResponse(true);
+				responseItem.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] se actualizó éxitosamente");
 			} else {
-				response.setResponse(false);
-				response.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] no se pudo actualizar");
+				responseItem.setResponse(false);
+				responseItem.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] no se pudo actualizar");
 			}
-            respuesta.add(response);
+            respuesta.add(responseItem);
 		}
 		return new ResponseEntity<>((new Gson()).toJson(respuesta), HttpStatus.OK);
 	}
