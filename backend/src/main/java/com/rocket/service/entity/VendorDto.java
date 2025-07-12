@@ -256,4 +256,13 @@ public class VendorDto {
         this.direccionCompleta = direccionCompleta;
     }
 
+    private boolean useGraphQL;
+
+    public boolean isUseGraphQL() {
+        return useGraphQL;
+    }
+
+    public void setUseGraphQL(boolean useGraphQL) {
+        this.useGraphQL = useGraphQL;
+    }
 }

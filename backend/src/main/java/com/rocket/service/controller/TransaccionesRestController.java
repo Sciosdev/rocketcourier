@@ -508,8 +508,10 @@ public class TransaccionesRestController {
                         if (registro.getOrder() != null && registro.getOrder().isShopifyOrder()) {
                             VendorDto vendor = getVendor(registro);
                             if (vendor != null) {
-                                ShopifyFulfillmentData data = shopifySyncService.fetchFulfillmentData(vendor, registro.getOrder().getId());
+                                ShopifyFulfillmentData data = shopifySyncService.fetchFulfillmentData(vendor, registro.getOrder().getId(), registro.getOrder());
                                 if (data != null) {
+                                    // Los GIDs ya se guardan dentro de fetchFulfillmentDataGraphQL
+                                    // Estos setters aseguran compatibilidad con la implementación REST y la lógica subsecuente
                                     registro.getOrder().setFulfillmentOrderId(data.getFulfillmentOrderId());
                                     registro.getOrder().setFulfillmentLineItemId(data.getLineItemId());
                                     registro.getOrder().setFulfillmentLineItemQty(data.getQuantity());

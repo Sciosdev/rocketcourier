@@ -554,15 +554,15 @@ public class EstatusController {
                         final Integer ID_ESTATUS_ENTREGADO_AL_USUARIO_FINAL = 11;
 
                         if (ID_ESTATUS_RECOLECTADO.equals(idEstatusOriginal) && ID_ESTATUS_ENTREGADO_EN_BODEGA.equals(idEstatusNuevo)) {
-                            shopifySyncService.postFulfillmentEvent(vendor, shopifyOrderId, shopifyFulfillmentId, "ready_for_pickup", "Paquete listo para recogida en bodega");
+                            shopifySyncService.postFulfillmentEvent(vendor, registro.getOrder(), shopifyFulfillmentId, "ready_for_pickup", "Paquete listo para recogida en bodega");
                         } else if (ID_ESTATUS_ENTREGADO_EN_BODEGA.equals(idEstatusOriginal) && ID_ESTATUS_ASIGNADO_AL_COURIER.equals(idEstatusNuevo)) {
-                            shopifySyncService.postFulfillmentEvent(vendor, shopifyOrderId, shopifyFulfillmentId, "in_transit", "Courier asignado y paquete en tránsito");
+                            shopifySyncService.postFulfillmentEvent(vendor, registro.getOrder(), shopifyFulfillmentId, "in_transit", "Courier asignado y paquete en tránsito");
                         } else if (ID_ESTATUS_ASIGNADO_AL_COURIER.equals(idEstatusOriginal) && ID_ESTATUS_EN_CURSO_DE_ENTREGA.equals(idEstatusNuevo)) {
-                            shopifySyncService.postFulfillmentEvent(vendor, shopifyOrderId, shopifyFulfillmentId, "out_for_delivery", "Paquete en reparto para entrega al cliente");
+                            shopifySyncService.postFulfillmentEvent(vendor, registro.getOrder(), shopifyFulfillmentId, "out_for_delivery", "Paquete en reparto para entrega al cliente");
                         } else if (ID_ESTATUS_EN_CURSO_DE_ENTREGA.equals(idEstatusOriginal) && ID_ESTATUS_ENTREGADO_AL_USUARIO_FINAL.equals(idEstatusNuevo)) {
-                            shopifySyncService.postFulfillmentEvent(vendor, shopifyOrderId, shopifyFulfillmentId, "delivered", "Pedido entregado al cliente");
+                            shopifySyncService.postFulfillmentEvent(vendor, registro.getOrder(), shopifyFulfillmentId, "delivered", "Pedido entregado al cliente");
                         } else if (ID_ESTATUS_EN_CURSO_DE_ENTREGA.equals(idEstatusOriginal) && ID_ESTATUS_ENTREGA_FALLIDA.equals(idEstatusNuevo)) {
-                            shopifySyncService.postFulfillmentEvent(vendor, shopifyOrderId, shopifyFulfillmentId, "attempted_delivery", "Entrega fallida, paquete en retorno a bodega");
+                            shopifySyncService.postFulfillmentEvent(vendor, registro.getOrder(), shopifyFulfillmentId, "attempted_delivery", "Entrega fallida, paquete en retorno a bodega");
                         }
                     }
                 } else {
