@@ -47,6 +47,9 @@ public class OrderDto {
         private String shopifyLineItemGid;
         private String shopifyFulfillmentGid;
 
+        @org.springframework.data.annotation.Transient
+        private String shopifyApiError; // Campo transitorio para mensajes de error
+
 	@NotNull(message = "created_at Es un campo requerido")
     @com.fasterxml.jackson.annotation.JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
 	private Date created_at;
@@ -173,6 +176,14 @@ public class OrderDto {
         }
         public void setShopifyFulfillmentGid(String shopifyFulfillmentGid) {
                 this.shopifyFulfillmentGid = shopifyFulfillmentGid;
+        }
+
+        public String getShopifyApiError() {
+            return shopifyApiError;
+        }
+
+        public void setShopifyApiError(String shopifyApiError) {
+            this.shopifyApiError = shopifyApiError;
         }
 
         public Date getCreated_at() {

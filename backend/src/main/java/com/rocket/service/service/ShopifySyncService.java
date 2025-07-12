@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import com.google.gson.JsonSyntaxException;
 
 import com.rocket.service.entity.OrderDto;
+import com.rocket.service.exception.ShopifyApiException;
 import com.rocket.service.entity.RegistryDto;
 import com.rocket.service.entity.VendorDto;
 import com.rocket.service.model.ShopifyFulfillmentData;
@@ -162,11 +163,16 @@ public class ShopifySyncService {
 
             JsonObject responseJson = JsonParser.parseString(response).getAsJsonObject();
             if (responseJson.has("errors")) {
-                log.error("GraphQL errors for fetchFulfillmentData on order GID {}: {}", orderGid, responseJson.get("errors").toString());
-                return null;
+                String error = responseJson.get("errors").toString();
+                log.error("GraphQL errors for fetchFulfillmentData on order GID {}: {}", orderGid, error);
+                throw new ShopifyApiException("GraphQL Error: " + error);
             }
 
-            JsonObject orderNode = responseJson.getAsJsonObject("data").getAsJsonObject("order");
+            JsonObject data = responseJson.getAsJsonObject("data");
+            if (data == null || data.isJsonNull() || !data.has("order") || data.get("order").isJsonNull()) {
+                throw new ShopifyApiException("Respuesta de GraphQL no contiene 'data.order' para GID " + orderGid);
+            }
+            JsonObject orderNode = data.getAsJsonObject("order");
             JsonArray foEdges = orderNode.getAsJsonObject("fulfillmentOrders").getAsJsonArray("edges");
 
             if (foEdges.size() > 0) {
