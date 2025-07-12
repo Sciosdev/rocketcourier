@@ -197,6 +197,10 @@ public class ShopifySyncService {
     }
 
     public ShopifyFulfillmentData fetchFulfillmentData(VendorDto vendor, String shopifyOrderId, OrderDto orderDto) {
+        if (vendor == null) {
+            log.warn("Vendor es nulo, no se puede ejecutar fetchFulfillmentData.");
+            return null;
+        }
         if (vendor.isUseGraphQL()) {
             log.info("Dispatching to GraphQL implementation for fetchFulfillmentData.");
             return fetchFulfillmentDataGraphQL(vendor, shopifyOrderId, orderDto);
@@ -368,6 +372,10 @@ public class ShopifySyncService {
     }
 
     public String createFulfillmentWithTracking(VendorDto vendor, RegistryDto registryDto, String siteUrl) {
+        if (vendor == null) {
+            log.warn("Vendor es nulo, no se puede ejecutar createFulfillmentWithTracking.");
+            return null;
+        }
         if (vendor.isUseGraphQL()) {
             log.info("Dispatching to GraphQL implementation for createFulfillmentWithTracking.");
             return createFulfillmentWithTrackingGraphQL(vendor, registryDto, siteUrl);
@@ -462,6 +470,10 @@ public class ShopifySyncService {
     }
 
     public void postFulfillmentEvent(VendorDto vendor, OrderDto orderDto, String shopifyFulfillmentId, String eventStatus, String message) {
+        if (vendor == null) {
+            log.warn("Vendor es nulo, no se puede ejecutar postFulfillmentEvent.");
+            return;
+        }
         if (vendor.isUseGraphQL()) {
             log.info("Dispatching to GraphQL implementation for postFulfillmentEvent.");
             postFulfillmentEventGraphQL(vendor, orderDto, eventStatus, message);
