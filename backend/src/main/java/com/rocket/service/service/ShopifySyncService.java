@@ -6,8 +6,11 @@ import java.util.Map;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 
+import com.rocket.service.entity.RegistryDto;
 import com.rocket.service.entity.VendorDto;
 import com.rocket.service.model.ShopifyFulfillmentData;
 
@@ -113,6 +116,86 @@ public class ShopifySyncService {
             }
         } catch (Exception e) {
             log.error("Error parsing Shopify fulfillment data", e);
+        }
+        return null;
+    }
+
+    public String createFulfillmentWithTracking(VendorDto vendor, RegistryDto registryDto, String siteUrl) {
+        if (vendor == null || registryDto == null || registryDto.getOrder() == null || siteUrl == null) {
+            log.error("Vendor, RegistryDto, OrderDto o siteUrl es nulo. No se puede crear fulfillment.");
+            return null;
+        }
+
+        String shopifyOrderId = registryDto.getOrder().getId(); // Este es el ID de la orden en Shopify
+        String orderKey = registryDto.getOrder().getOrderKey() != null ? registryDto.getOrder().getOrderKey().toString() : null;
+        String fulfillmentOrderId = registryDto.getOrder().getFulfillmentOrderId();
+        String lineItemId = registryDto.getOrder().getFulfillmentLineItemId();
+        Integer quantity = registryDto.getOrder().getFulfillmentLineItemQty();
+
+        if (shopifyOrderId == null || orderKey == null || fulfillmentOrderId == null || lineItemId == null || quantity == null) {
+            log.error("Datos incompletos para crear fulfillment para orderKey {}: shopifyOrderId={}, fulfillmentOrderId={}, lineItemId={}, quantity={}",
+                    orderKey, shopifyOrderId, fulfillmentOrderId, lineItemId, quantity);
+            return null;
+        }
+
+        String url = baseUrl(vendor) + "/fulfillments.json";
+        log.info("Creando fulfillment con tracking para Shopify Order ID: {}, URL: {}", shopifyOrderId, url);
+
+        // Construir el cuerpo de la solicitud
+        JsonObject fulfillmentPayload = new JsonObject();
+        JsonObject fulfillmentDetails = new JsonObject();
+
+        // Tracking Info
+        JsonObject trackingInfo = new JsonObject();
+        trackingInfo.addProperty("number", orderKey); // Usamos orderKey como tracking number
+        trackingInfo.addProperty("company", "Rocket Courier");
+        trackingInfo.addProperty("url", siteUrl + "/intranet/inicio?orderKey=" + orderKey);
+        fulfillmentDetails.add("tracking_info", trackingInfo);
+        fulfillmentDetails.addProperty("notify_customer", true);
+
+        // Line Items by Fulfillment Order
+        JsonArray lineItemsByFulfillmentOrderArray = new JsonArray();
+        JsonObject fulfillmentOrderDetails = new JsonObject();
+        fulfillmentOrderDetails.addProperty("fulfillment_order_id", Long.parseLong(fulfillmentOrderId)); // Shopify espera un Long
+
+        JsonArray fulfillmentOrderLineItemsArray = new JsonArray();
+        JsonObject lineItemDetails = new JsonObject();
+        lineItemDetails.addProperty("id", Long.parseLong(lineItemId)); // Shopify espera un Long
+        lineItemDetails.addProperty("quantity", quantity);
+        fulfillmentOrderLineItemsArray.add(lineItemDetails);
+
+        fulfillmentOrderDetails.add("fulfillment_order_line_items", fulfillmentOrderLineItemsArray);
+        lineItemsByFulfillmentOrderArray.add(fulfillmentOrderDetails);
+        fulfillmentDetails.add("line_items_by_fulfillment_order", lineItemsByFulfillmentOrderArray);
+
+        fulfillmentPayload.add("fulfillment", fulfillmentDetails);
+
+        HttpHeaders headers = defaultHeaders(vendor);
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<>(fulfillmentPayload.toString(), headers);
+
+        try {
+            log.debug("Payload para crear fulfillment: {}", fulfillmentPayload.toString());
+            String response = restTemplate.postForObject(url, entity, String.class);
+            log.info("Respuesta de Shopify al crear fulfillment: {}", response);
+
+            if (response != null) {
+                JsonElement jsonElement = JsonParser.parseString(response);
+                if (jsonElement.isJsonObject()) {
+                    JsonObject responseObject = jsonElement.getAsJsonObject();
+                    if (responseObject.has("fulfillment") && responseObject.get("fulfillment").isJsonObject()) {
+                        JsonObject fulfillmentObject = responseObject.getAsJsonObject("fulfillment");
+                        if (fulfillmentObject.has("id")) {
+                            return fulfillmentObject.get("id").getAsString();
+                        }
+                    }
+                }
+            }
+            log.error("No se pudo extraer el fulfillment ID de la respuesta de Shopify para orderKey {}. Respuesta: {}", orderKey, response);
+        } catch (JsonSyntaxException e) {
+            log.error("Error al parsear JSON de respuesta de Shopify para orderKey {}: {}", orderKey, e.getMessage());
+        } catch (Exception e) {
+            log.error("Error al crear fulfillment en Shopify para orderKey {}: {}", orderKey, e.getMessage(), e);
         }
         return null;
     }
