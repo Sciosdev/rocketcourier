@@ -537,6 +537,43 @@ public class EstatusController {
             }
             // ---> FIN DE LA LÓGICA DE SHOPIFY (PASO 2) <---
 
+
+            // ---> INICIO DE LA LÓGICA DE EVENTOS DE FULFILLMENT DE SHOPIFY <---
+            if (registro.getOrder().isShopifyOrder()) {
+                String shopifyFulfillmentId = registro.getOrder().getShopifyFulfillmentId();
+                if (shopifyFulfillmentId != null && !shopifyFulfillmentId.isEmpty()) {
+                    VendorDto vendor = getVendor(registro);
+                    if (vendor != null) {
+                        String shopifyOrderId = registro.getOrder().getId();
+
+                        // IDs de estatus para los eventos
+                        final Integer ID_ESTATUS_ENTREGADO_EN_BODEGA = 7;
+                        final Integer ID_ESTATUS_ASIGNADO_AL_COURIER = 8;
+                        final Integer ID_ESTATUS_EN_CURSO_DE_ENTREGA = 9;
+                        final Integer ID_ESTATUS_ENTREGA_FALLIDA = 10;
+                        final Integer ID_ESTATUS_ENTREGADO_AL_USUARIO_FINAL = 11;
+
+                        if (ID_ESTATUS_RECOLECTADO.equals(idEstatusOriginal) && ID_ESTATUS_ENTREGADO_EN_BODEGA.equals(idEstatusNuevo)) {
+                            shopifySyncService.postFulfillmentEvent(vendor, shopifyOrderId, shopifyFulfillmentId, "ready_for_pickup", "Paquete listo para recogida en bodega");
+                        } else if (ID_ESTATUS_ENTREGADO_EN_BODEGA.equals(idEstatusOriginal) && ID_ESTATUS_ASIGNADO_AL_COURIER.equals(idEstatusNuevo)) {
+                            shopifySyncService.postFulfillmentEvent(vendor, shopifyOrderId, shopifyFulfillmentId, "in_transit", "Courier asignado y paquete en tránsito");
+                        } else if (ID_ESTATUS_ASIGNADO_AL_COURIER.equals(idEstatusOriginal) && ID_ESTATUS_EN_CURSO_DE_ENTREGA.equals(idEstatusNuevo)) {
+                            shopifySyncService.postFulfillmentEvent(vendor, shopifyOrderId, shopifyFulfillmentId, "out_for_delivery", "Paquete en reparto para entrega al cliente");
+                        } else if (ID_ESTATUS_EN_CURSO_DE_ENTREGA.equals(idEstatusOriginal) && ID_ESTATUS_ENTREGADO_AL_USUARIO_FINAL.equals(idEstatusNuevo)) {
+                            shopifySyncService.postFulfillmentEvent(vendor, shopifyOrderId, shopifyFulfillmentId, "delivered", "Pedido entregado al cliente");
+                        } else if (ID_ESTATUS_EN_CURSO_DE_ENTREGA.equals(idEstatusOriginal) && ID_ESTATUS_ENTREGA_FALLIDA.equals(idEstatusNuevo)) {
+                            shopifySyncService.postFulfillmentEvent(vendor, shopifyOrderId, shopifyFulfillmentId, "attempted_delivery", "Entrega fallida, paquete en retorno a bodega");
+                        }
+                    }
+                } else {
+                    // Log si se intenta enviar un evento pero no hay fulfillmentId.
+                    // Esto puede ocurrir si el Paso 2 falló o si el flujo de estados no es el esperado.
+                    log.warn("Se intentó enviar un evento de fulfillment para orderKey {}, pero no se encontró shopifyFulfillmentId.", dto.getOrderKey());
+                }
+            }
+            // ---> FIN DE LA LÓGICA DE EVENTOS DE FULFILLMENT DE SHOPIFY <---
+
+
             // ---> INICIO LÓGICA DE SHOPIFY EXISTENTE (REVISAR SI APLICA O ES REDUNDANTE/CONFLICTIVA) <---
             // Esta lógica ya estaba en el método. Es importante revisar si interfiere
             // con la nueva lógica del Paso 2 o si es para un flujo diferente.
