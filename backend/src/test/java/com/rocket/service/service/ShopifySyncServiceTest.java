@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.rocket.service.entity.OrderDto;
 import com.rocket.service.entity.RegistryDto;
 import com.rocket.service.entity.VendorDto;
+import com.rocket.service.model.ShopifyFulfillmentData;
 
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
@@ -241,14 +242,87 @@ class ShopifySyncServiceTest {
     }
 
     @Test
-    void testFetchFulfillmentDataCallsShopify() {
+    void fetchFulfillmentData_dispatchesToRest_whenFlagIsFalse() {
+        vendor.setUseGraphQL(false);
         String apiUrl = "https://test-store.myshopify.com/admin/api/2025-07/orders/123/fulfillment_orders.json";
         when(restTemplate.exchange(eq(apiUrl), eq(HttpMethod.GET), any(HttpEntity.class), eq(String.class)))
-            .thenReturn(ResponseEntity.ok("{\"fulfillment_orders\":[{\"id\":1,\"line_items\":[{\"id\":2,\"quantity\":1}]}]}"));
+            .thenReturn(ResponseEntity.ok("{\"fulfillment_orders\":[{\"id\":1001,\"line_items\":[{\"id\":2002,\"quantity\":1}]}]}"));
 
-        service.fetchFulfillmentData(vendor, "123");
+        service.fetchFulfillmentData(vendor, "123", orderDto);
+
         verify(restTemplate).exchange(eq(apiUrl), eq(HttpMethod.GET), any(HttpEntity.class), eq(String.class));
     }
+
+    @Test
+    void fetchFulfillmentData_dispatchesToGraphQL_whenFlagIsTrue() {
+        vendor.setUseGraphQL(true);
+        String graphqlUrl = "https://test-store.myshopify.com/admin/api/2025-07/graphql.json";
+        String mockResponse = "{\"data\":{\"order\":{\"fulfillmentOrders\":{\"edges\":[{\"node\":{\"id\":\"gid://shopify/FulfillmentOrder/1001\",\"lineItems\":{\"edges\":[{\"node\":{\"id\":\"gid://shopify/FulfillmentOrderLineItem/2002\",\"quantity\":1}}]}}}]}}}}";
+        when(restTemplate.postForObject(eq(graphqlUrl), any(HttpEntity.class), eq(String.class)))
+            .thenReturn(mockResponse);
+
+        service.fetchFulfillmentData(vendor, "123", orderDto);
+
+        verify(restTemplate).postForObject(eq(graphqlUrl), any(HttpEntity.class), eq(String.class));
+        assertEquals("gid://shopify/FulfillmentOrder/1001", orderDto.getShopifyFulfillmentOrderGid());
+        assertEquals("gid://shopify/FulfillmentOrderLineItem/2002", orderDto.getShopifyLineItemGid());
+    }
+
+    @Test
+    void createFulfillmentWithTracking_dispatchesToRest_whenFlagIsFalse() {
+        vendor.setUseGraphQL(false);
+        when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(String.class)))
+            .thenReturn("{\"fulfillment\":{\"id\":5773843562788,\"status\":\"success\"}}");
+
+        service.createFulfillmentWithTracking(vendor, registryDto, DEFAULT_SITE_URL);
+
+        verify(restTemplate).postForObject(eq(buildExpectedShopifyUrl()), any(HttpEntity.class), eq(String.class));
+    }
+
+    @Test
+    void createFulfillmentWithTracking_dispatchesToGraphQL_whenFlagIsTrue() {
+        vendor.setUseGraphQL(true);
+        // Prereqs for GraphQL call
+        orderDto.setShopifyFulfillmentOrderGid("gid://shopify/FulfillmentOrder/10978443329828");
+        orderDto.setShopifyLineItemGid("gid://shopify/FulfillmentOrderLineItem/31904189251876");
+
+        String graphqlUrl = "https://test-store.myshopify.com/admin/api/2025-07/graphql.json";
+        String mockResponse = "{\"data\":{\"fulfillmentCreateV2\":{\"fulfillment\":{\"id\":\"gid://shopify/Fulfillment/5773843562788\"},\"userErrors\":[]}}}";
+        when(restTemplate.postForObject(eq(graphqlUrl), any(HttpEntity.class), eq(String.class)))
+            .thenReturn(mockResponse);
+
+        service.createFulfillmentWithTracking(vendor, registryDto, DEFAULT_SITE_URL);
+
+        verify(restTemplate).postForObject(eq(graphqlUrl), any(HttpEntity.class), eq(String.class));
+        assertEquals("gid://shopify/Fulfillment/5773843562788", orderDto.getShopifyFulfillmentGid());
+    }
+
+    @Test
+    void postFulfillmentEvent_dispatchesToRest_whenFlagIsFalse() {
+        vendor.setUseGraphQL(false);
+        String expectedUrl = "https://test-store.myshopify.com/admin/api/2025-07/orders/shopifyOrder123/fulfillments/fulfillment123/events.json";
+
+        service.postFulfillmentEvent(vendor, orderDto, "fulfillment123", "delivered", "msg");
+
+        verify(restTemplate).postForObject(eq(expectedUrl), any(HttpEntity.class), eq(String.class));
+    }
+
+    @Test
+    void postFulfillmentEvent_dispatchesToGraphQL_whenFlagIsTrue() {
+        vendor.setUseGraphQL(true);
+        orderDto.setShopifyFulfillmentGid("gid://shopify/Fulfillment/12345");
+        String graphqlUrl = "https://test-store.myshopify.com/admin/api/2025-07/graphql.json";
+        String mockResponse = "{\"data\":{\"fulfillmentEventCreate\":{\"fulfillmentEvent\":{\"id\":\"gid://shopify/FulfillmentEvent/1\"},\"userErrors\":[]}}}";
+        when(restTemplate.postForObject(eq(graphqlUrl), any(HttpEntity.class), eq(String.class)))
+            .thenReturn(mockResponse);
+
+        service.postFulfillmentEvent(vendor, orderDto, "12345", "delivered", "msg");
+
+        verify(restTemplate).postForObject(eq(graphqlUrl), any(HttpEntity.class), eq(String.class));
+    }
+
+
+    // --- Existing tests, adapted or kept for regression ---
 
     @Test
     void postFulfillmentEvent_success() {

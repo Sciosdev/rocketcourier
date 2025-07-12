@@ -40,7 +40,12 @@ public class OrderDto {
         private String fulfillmentOrderId;
         private String fulfillmentLineItemId;
         private Integer fulfillmentLineItemQty;
-        private String shopifyFulfillmentId; // Nuevo campo para el ID de fulfillment de Shopify
+        private String shopifyFulfillmentId; // ID numérico del fulfillment
+
+        // Campos para GIDs de GraphQL
+        private String shopifyFulfillmentOrderGid;
+        private String shopifyLineItemGid;
+        private String shopifyFulfillmentGid;
 
 	@NotNull(message = "created_at Es un campo requerido")
     @com.fasterxml.jackson.annotation.JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
@@ -148,6 +153,28 @@ public class OrderDto {
         public void setShopifyFulfillmentId(String shopifyFulfillmentId) {
                 this.shopifyFulfillmentId = shopifyFulfillmentId;
         }
+
+        public String getShopifyFulfillmentOrderGid() {
+                return shopifyFulfillmentOrderGid;
+        }
+        public void setShopifyFulfillmentOrderGid(String shopifyFulfillmentOrderGid) {
+                this.shopifyFulfillmentOrderGid = shopifyFulfillmentOrderGid;
+        }
+
+        public String getShopifyLineItemGid() {
+                return shopifyLineItemGid;
+        }
+        public void setShopifyLineItemGid(String shopifyLineItemGid) {
+                this.shopifyLineItemGid = shopifyLineItemGid;
+        }
+
+        public String getShopifyFulfillmentGid() {
+                return shopifyFulfillmentGid;
+        }
+        public void setShopifyFulfillmentGid(String shopifyFulfillmentGid) {
+                this.shopifyFulfillmentGid = shopifyFulfillmentGid;
+        }
+
         public Date getCreated_at() {
                 return created_at;
         }
