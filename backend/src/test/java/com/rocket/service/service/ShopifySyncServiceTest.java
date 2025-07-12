@@ -249,4 +249,74 @@ class ShopifySyncServiceTest {
         service.fetchFulfillmentData(vendor, "123");
         verify(restTemplate).exchange(eq(apiUrl), eq(HttpMethod.GET), any(HttpEntity.class), eq(String.class));
     }
+
+    @Test
+    void postFulfillmentEvent_success() {
+        String shopifyOrderId = "shopifyOrder123";
+        String fulfillmentId = "fulfillment123";
+        String eventStatus = "delivered";
+        String message = "Your package has been delivered.";
+        String expectedUrl = "https://test-store.myshopify.com/admin/api/2025-07/orders/" + shopifyOrderId + "/fulfillments/" + fulfillmentId + "/events.json";
+
+        service.postFulfillmentEvent(vendor, shopifyOrderId, fulfillmentId, eventStatus, message);
+
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).postForObject(eq(expectedUrl), httpEntityCaptor.capture(), eq(String.class));
+
+        HttpEntity capturedEntity = httpEntityCaptor.getValue();
+        assertNotNull(capturedEntity.getBody());
+        String payload = capturedEntity.getBody().toString();
+
+        JsonObject parsedPayload = com.google.gson.JsonParser.parseString(payload).getAsJsonObject();
+        JsonObject eventNode = parsedPayload.getAsJsonObject("event");
+        assertNotNull(eventNode);
+        assertEquals(eventStatus, eventNode.get("status").getAsString());
+        assertEquals(message, eventNode.get("message").getAsString());
+        assertNotNull(eventNode.get("happened_at").getAsString());
+    }
+
+    @Test
+    void postFulfillmentEvent_nullMessage_success() {
+        String shopifyOrderId = "shopifyOrder123";
+        String fulfillmentId = "fulfillment123";
+        String eventStatus = "in_transit";
+        String expectedUrl = "https://test-store.myshopify.com/admin/api/2025-07/orders/" + shopifyOrderId + "/fulfillments/" + fulfillmentId + "/events.json";
+
+        service.postFulfillmentEvent(vendor, shopifyOrderId, fulfillmentId, eventStatus, null);
+
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).postForObject(eq(expectedUrl), httpEntityCaptor.capture(), eq(String.class));
+
+        HttpEntity capturedEntity = httpEntityCaptor.getValue();
+        String payload = capturedEntity.getBody().toString();
+
+        JsonObject parsedPayload = com.google.gson.JsonParser.parseString(payload).getAsJsonObject();
+        JsonObject eventNode = parsedPayload.getAsJsonObject("event");
+        assertNotNull(eventNode);
+        assertEquals(eventStatus, eventNode.get("status").getAsString());
+        assertNull(eventNode.get("message")); // Message should not be present in payload
+    }
+
+    @Test
+    void postFulfillmentEvent_apiError_doesNotThrow() {
+        String shopifyOrderId = "shopifyOrder123";
+        String fulfillmentId = "fulfillment123";
+        String eventStatus = "failure";
+        String expectedUrl = "https://test-store.myshopify.com/admin/api/2025-07/orders/" + shopifyOrderId + "/fulfillments/" + fulfillmentId + "/events.json";
+
+        when(restTemplate.postForObject(eq(expectedUrl), any(HttpEntity.class), eq(String.class)))
+            .thenThrow(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Shopify Server Error"));
+
+        // Should not throw an exception, as it's caught and logged internally
+        service.postFulfillmentEvent(vendor, shopifyOrderId, fulfillmentId, eventStatus, "Critical failure");
+
+        // Verify that the call was still attempted
+        verify(restTemplate).postForObject(eq(expectedUrl), any(HttpEntity.class), eq(String.class));
+    }
+
+    @Test
+    void postFulfillmentEvent_missingFulfillmentId_doesNotCallApi() {
+        service.postFulfillmentEvent(vendor, "shopifyOrder123", null, "delivered", "message");
+        verify(restTemplate, never()).postForObject(anyString(), any(), any());
+    }
 }

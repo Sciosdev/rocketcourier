@@ -8,6 +8,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+
 import com.google.gson.JsonSyntaxException;
 
 import com.rocket.service.entity.RegistryDto;
@@ -198,5 +201,38 @@ public class ShopifySyncService {
             log.error("Error al crear fulfillment en Shopify para orderKey {}: {}", orderKey, e.getMessage(), e);
         }
         return null;
+    }
+
+    public void postFulfillmentEvent(VendorDto vendor, String shopifyOrderId, String shopifyFulfillmentId, String eventStatus, String message) {
+        if (vendor == null || shopifyOrderId == null || shopifyFulfillmentId == null || eventStatus == null) {
+            log.error("Datos incompletos para enviar evento de fulfillment. Shopify Order ID: {}, Fulfillment ID: {}", shopifyOrderId, shopifyFulfillmentId);
+            return;
+        }
+
+        String url = baseUrl(vendor) + "/orders/" + shopifyOrderId + "/fulfillments/" + shopifyFulfillmentId + "/events.json";
+        log.info("Enviando evento de fulfillment a Shopify. URL: {}, Status: {}, Message: {}", url, eventStatus, message);
+
+        // Construir el cuerpo de la solicitud
+        JsonObject eventPayload = new JsonObject();
+        JsonObject eventDetails = new JsonObject();
+        eventDetails.addProperty("status", eventStatus);
+        if (message != null && !message.isEmpty()) {
+            eventDetails.addProperty("message", message);
+        }
+        // Formato ISO 8601, ej: "2025-07-11T09:00:00Z"
+        eventDetails.addProperty("happened_at", Instant.now().toString());
+        eventPayload.add("event", eventDetails);
+
+        HttpHeaders headers = defaultHeaders(vendor);
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<>(eventPayload.toString(), headers);
+
+        try {
+            log.debug("Payload para evento de fulfillment: {}", eventPayload.toString());
+            String response = restTemplate.postForObject(url, entity, String.class);
+            log.info("Respuesta de Shopify al enviar evento de fulfillment: {}", response);
+        } catch (Exception e) {
+            log.error("Error al enviar evento de fulfillment a Shopify para Order ID {}: {}", shopifyOrderId, e.getMessage(), e);
+        }
     }
 }
