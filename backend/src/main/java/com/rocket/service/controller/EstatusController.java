@@ -463,53 +463,112 @@ public class EstatusController {
     public @ResponseBody ResponseEntity<String> actualizaEstatusList(
             @RequestBody List<ActualizaEstatusServiceInDto> actualizaEstatusServiceInDtoList) {
 
-        List<RegistroServiceOutDto> response = new ArrayList<>();
-        actualizaEstatusServiceInDtoList.forEach(actualizaEstatusServiceInDto -> {
-            RegistryDto registro = new RegistryDto();
-            registro = registroService.buscarPorOrderKey(new ObjectId(actualizaEstatusServiceInDto.getOrderKey()));
+        // IDs de estatus relevantes y URL base de Rocket
+        final Integer ID_ESTATUS_AGENDA_ACEPTADA_PENDIENTE_RECOLECCION = 3;
+        final Integer ID_ESTATUS_RECOLECTADO = 6;
+        final String ROCKET_BASE_URL = "https://main.d3je47rbud1pwk.amplifyapp.com";
 
-            registro.setDeliveryComment(actualizaEstatusServiceInDto.getComment());
-            EstatusDto actual = estatusService.obtenerEstatusPorId(registro.getIdEstatus());
+        List<RegistroServiceOutDto> responseFramework = new ArrayList<>(); // Renombrado para claridad
+        actualizaEstatusServiceInDtoList.forEach(dto -> {
+            RegistryDto registro = registroService.buscarPorOrderKey(new ObjectId(dto.getOrderKey()));
+
+            if (registro == null) {
+                log.warn("No se encontró registro para orderKey {} en actualizaEstatusList", dto.getOrderKey());
+                // Considerar cómo manejar la respuesta para este caso si es necesario.
+                // Por ahora, simplemente se omite de la respuesta.
+                return; // Salta a la siguiente iteración del forEach
+            }
+            if (registro.getOrder() == null) {
+                log.warn("OrderDto es nulo para el registro {} (orderKey {}) en actualizaEstatusList", registro.getId(), dto.getOrderKey());
+                return;
+            }
+
+            registro.setDeliveryComment(dto.getComment());
+            EstatusDto estatusActual = estatusService.obtenerEstatusPorId(registro.getIdEstatus());
+
+            if (estatusActual == null) {
+                log.warn("No se encontró estatus actual para el registro {} (orderKey {}) con idEstatus {}", registro.getId(), dto.getOrderKey(), registro.getIdEstatus());
+                return;
+            }
+
+            Integer idEstatusOriginal = estatusActual.getId();
+            Integer idEstatusNuevo = dto.getEstatusDto().getId();
 
             EstatusLogDto estatusLog = new EstatusLogDto();
-            estatusLog.setEstatusAnterior(actual.getId());
-            estatusLog.setEstatusActual(actualizaEstatusServiceInDto.getEstatusDto().getId());
+            estatusLog.setEstatusAnterior(idEstatusOriginal);
+            estatusLog.setEstatusActual(idEstatusNuevo);
             estatusLog.setFechaActualizacion(new Date());
-            estatusLog.setUsuario(actualizaEstatusServiceInDto.getUser());
+            estatusLog.setUsuario(dto.getUser());
 
             List<EstatusLogDto> estatusLogList = registro.getEstatusLog();
-
-            if (estatusLogList == null)
+            if (estatusLogList == null) {
                 estatusLogList = new ArrayList<>();
-
+            }
             estatusLogList.add(estatusLog);
-
             registro.setEstatusLog(estatusLogList);
 
-            registro.setIdEstatus(actualizaEstatusServiceInDto.getEstatusDto().getId());
+            registro.setIdEstatus(idEstatusNuevo);
 
-            if (registro.getScheduled() != null && actualizaEstatusServiceInDto.getCourier() != null)
-                registro.getScheduled().setIdCourier(actualizaEstatusServiceInDto.getCourier());
+            if (registro.getScheduled() != null && dto.getCourier() != null) {
+                registro.getScheduled().setIdCourier(dto.getCourier());
+            }
+
+            // ---> INICIO DE LA LÓGICA DE SHOPIFY (PASO 2) <---
+            if (registro.getOrder().isShopifyOrder() &&
+                ID_ESTATUS_AGENDA_ACEPTADA_PENDIENTE_RECOLECCION.equals(idEstatusOriginal) &&
+                ID_ESTATUS_RECOLECTADO.equals(idEstatusNuevo)) {
+
+                VendorDto vendor = getVendor(registro); // Usa el método getVendor de EstatusController
+                if (vendor != null && vendor.getShopifyStoreUrl() != null && vendor.getShopifyAccessToken() != null) {
+                    log.info("Pedido Shopify {} (orderKey {}) cambiando de estado {} a {}. Intentando crear fulfillment con tracking.",
+                             registro.getOrder().getId(), dto.getOrderKey(), idEstatusOriginal, idEstatusNuevo);
+
+                    String shopifyFulfillmentId = shopifySyncService.createFulfillmentWithTracking(vendor, registro, ROCKET_BASE_URL);
+
+                    if (shopifyFulfillmentId != null && !shopifyFulfillmentId.isEmpty()) {
+                        registro.getOrder().setShopifyFulfillmentId(shopifyFulfillmentId);
+                        log.info("Fulfillment de Shopify creado con ID {} para orderKey {}", shopifyFulfillmentId, dto.getOrderKey());
+                    } else {
+                        log.warn("No se pudo crear/obtener el fulfillment ID de Shopify para orderKey {}", dto.getOrderKey());
+                    }
+                } else {
+                    log.warn("No se puede sincronizar Paso 2 con Shopify para orderKey {}: Vendor o configuración de Shopify faltante.", dto.getOrderKey());
+                }
+            }
+            // ---> FIN DE LA LÓGICA DE SHOPIFY (PASO 2) <---
+
+            // ---> INICIO LÓGICA DE SHOPIFY EXISTENTE (REVISAR SI APLICA O ES REDUNDANTE/CONFLICTIVA) <---
+            // Esta lógica ya estaba en el método. Es importante revisar si interfiere
+            // con la nueva lógica del Paso 2 o si es para un flujo diferente.
+            // Si createFulfillment y postFulfillmentEvent son para otros pasos/eventos, deberían tener sus propias condiciones.
+            // Por ahora, la dejo comentada para evitar ejecuciones dobles o inesperadas.
+            /*
+            if (registro.getOrder() != null && registro.getOrder().isShopifyOrder()) {
+                VendorDto vendor = getVendor(registro);
+                if (vendor != null) {
+                    // ¿En qué condiciones se debe llamar a esto? ¿Es diferente del Paso 2?
+                    // shopifySyncService.createFulfillment(vendor, registro.getOrder().getId());
+                    // shopifySyncService.postFulfillmentEvent(vendor, registro.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(registro.getIdEstatus()).getDesc());
+                    log.info("Lógica de Shopify existente en actualizaEstatusList para orderKey {} (Shopify Order ID {}). Revisar si aún es necesaria o si causa conflicto.",
+                             dto.getOrderKey(), registro.getOrder().getId());
+                }
+            }
+            */
+            // ---> FIN LÓGICA DE SHOPIFY EXISTENTE <---
+
 
             try {
-                RegistryDto r = registroService.guardar(registro);
+                RegistryDto r = registroService.guardar(registro); // Guardar el registro con el posible shopifyFulfillmentId
                 LoadDto carga = cargaService.obtenerCargaPorId(r.getIdCarga());
                 RegistroServiceOutDto res = RegistroMapper.mapRegistroCargaToRegistroOut(r, carga, usuarioService,
                         vendorService, estatusService);
-                response.add(res);
-                if (r.getOrder() != null && r.getOrder().isShopifyOrder()) {
-                    VendorDto vendor = getVendor(r);
-                    if (vendor != null) {
-                        shopifySyncService.createFulfillment(vendor, r.getOrder().getId());
-                        shopifySyncService.postFulfillmentEvent(vendor, r.getOrder().getId(), "0", estatusService.obtenerEstatusPorId(r.getIdEstatus()).getDesc());
-                    }
-                }
+                responseFramework.add(res);
             } catch (Exception e) {
-                log.error(e.toString());
+                log.error("Error al guardar o mapear el registro para orderKey {}: {}", dto.getOrderKey(), e.toString(), e);
             }
         });
 
-        return new ResponseEntity<>((new Gson()).toJson(response), HttpStatus.OK);
+        return new ResponseEntity<>((new Gson()).toJson(responseFramework), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/estatus/discard", method = RequestMethod.PUT, produces = {
