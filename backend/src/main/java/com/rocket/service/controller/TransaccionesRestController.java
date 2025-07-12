@@ -32,6 +32,7 @@ import com.rocket.service.model.RegistroServiceInDto;
 import com.rocket.service.model.RegistroServiceOutDto;
 import com.rocket.service.model.ScheduleServiceInDto;
 import com.rocket.service.model.ShopifyFulfillmentData;
+import com.rocket.service.exception.ShopifyApiException;
 import com.rocket.service.service.CargaService;
 import com.rocket.service.service.EstatusService;
 import com.rocket.service.service.RegistroService;
@@ -508,13 +509,21 @@ public class TransaccionesRestController {
                         if (registro.getOrder() != null && registro.getOrder().isShopifyOrder()) {
                             VendorDto vendor = getVendor(registro);
                             if (vendor != null) {
-                                ShopifyFulfillmentData data = shopifySyncService.fetchFulfillmentData(vendor, registro.getOrder().getId(), registro.getOrder());
-                                if (data != null) {
-                                    // Los GIDs ya se guardan dentro de fetchFulfillmentDataGraphQL
-                                    // Estos setters aseguran compatibilidad con la implementación REST y la lógica subsecuente
-                                    registro.getOrder().setFulfillmentOrderId(data.getFulfillmentOrderId());
-                                    registro.getOrder().setFulfillmentLineItemId(data.getLineItemId());
-                                    registro.getOrder().setFulfillmentLineItemQty(data.getQuantity());
+                                try {
+                                    ShopifyFulfillmentData data = shopifySyncService.fetchFulfillmentData(vendor, registro.getOrder().getId(), registro.getOrder());
+                                    if (data != null) {
+                                        // Los GIDs ya se guardan dentro de fetchFulfillmentDataGraphQL
+                                        // Estos setters aseguran compatibilidad con la implementación REST y la lógica subsecuente
+                                        registro.getOrder().setFulfillmentOrderId(data.getFulfillmentOrderId());
+                                        registro.getOrder().setFulfillmentLineItemId(data.getLineItemId());
+                                        registro.getOrder().setFulfillmentLineItemQty(data.getQuantity());
+                                    } else {
+                                        // Esto puede ocurrir si la implementación REST devuelve null pero no lanza excepción
+                                        log.warn("La obtención de datos de Shopify para la orden {} devolvió null.", registro.getOrder().getId());
+                                    }
+                                } catch (ShopifyApiException e) {
+                                    log.error("Error de API de Shopify al obtener datos para la orden {}: {}", registro.getOrder().getId(), e.getMessage());
+                                    registro.getOrder().setShopifyApiError(e.getMessage());
                                 }
                             }
                         }
@@ -523,16 +532,31 @@ public class TransaccionesRestController {
                 }
 		List<DBResponse> respuesta = new ArrayList<>();
 		for (RegistryDto registroGuardado : registros) {
-			RegistryDto registroResponse = registroService.guardar(registroGuardado);
-            DBResponse response = new DBResponse();
-			if (registroResponse != null) {
-				response.setResponse(true);
-				response.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] se actualizó éxitosamente");
-			} else {
+			DBResponse response = new DBResponse();
+			try {
+				RegistryDto registroResponse = registroService.guardar(registroGuardado);
+				if (registroResponse != null) {
+					response.setResponse(true);
+					response.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] se actualizó éxitosamente");
+				} else {
+					response.setResponse(false);
+					response.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] no se pudo actualizar");
+				}
+			} catch (Exception e) {
+				log.error("Error al guardar el registro para la orden {}: {}", registroGuardado.getOrder() != null ? registroGuardado.getOrder().getId() : "N/A", e.getMessage());
 				response.setResponse(false);
-				response.setResponseMessage("El registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "] no se pudo actualizar");
+				response.setResponseMessage("Falla crítica al guardar el registro [" + (registroGuardado.getOrder() != null ? registroGuardado.getOrder().getName() : registroGuardado.getId()) + "].");
 			}
-            respuesta.add(response);
+
+			// Adjuntar errores de Shopify si existen
+			if (registroGuardado.getOrder() != null && registroGuardado.getOrder().getShopifyApiError() != null) {
+				String currentMessage = response.getResponseMessage();
+				response.setResponseMessage(currentMessage + " | ADVERTENCIA SHOPIFY: " + registroGuardado.getOrder().getShopifyApiError());
+				// Limpiar el error para no guardarlo en la BD
+                registroGuardado.getOrder().setShopifyApiError(null);
+			}
+
+			respuesta.add(response);
 		}
 		return new ResponseEntity<>((new Gson()).toJson(respuesta), HttpStatus.OK);
 	}
