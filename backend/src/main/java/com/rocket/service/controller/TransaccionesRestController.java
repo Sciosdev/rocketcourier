@@ -379,11 +379,6 @@ public class TransaccionesRestController {
 		List<RegistryDto> registros = new ArrayList<>();
 		List<DBResponse> respuesta = new ArrayList<>();
 
-		// IDs de estatus relevantes y URL base de Rocket
-		final Integer ID_ESTATUS_AGENDA_ACEPTADA_PENDIENTE_RECOLECCION = 3;
-		final Integer ID_ESTATUS_RECOLECTADO = 6;
-		final String ROCKET_BASE_URL = "https://main.d3je47rbud1pwk.amplifyapp.com";
-
 		for (ScheduleServiceInDto schedule : scheduleList) {
 			RegistryDto registro = registroService.buscarPorOrderKey(new ObjectId(schedule.getOrderkey()));
             if (registro == null) {
@@ -409,11 +404,11 @@ public class TransaccionesRestController {
                 continue;
             }
 
-			Integer idEstatusOriginal = actual.getId();
+			// Integer idEstatusOriginal = actual.getId(); // Ya no es necesario aquí
 			Integer idEstatusNuevo = siguiente.getId();
 
 			EstatusLogDto estatusLog = new EstatusLogDto();
-			estatusLog.setEstatusAnterior(idEstatusOriginal);
+			estatusLog.setEstatusAnterior(actual.getId()); // Usar actual.getId() directamente
 			estatusLog.setEstatusActual(idEstatusNuevo);
 			estatusLog.setFechaActualizacion(new Date());
 			estatusLog.setUsuario(schedule.getUser());
@@ -430,49 +425,18 @@ public class TransaccionesRestController {
 				registro.setScheduled(scheduled);
 			}
             // Actualizar campos del schedule según la información recibida
-            // Estos campos podrían ser opcionales si el Courier solo cambia el estado
             if (schedule.getScheduledDate() != null) {
                 scheduled.setScheduledDate(schedule.getScheduledDate());
             }
-            if (schedule.getVendor() != null) { // Generalmente el vendor no cambia en este punto por el Courier
+            if (schedule.getVendor() != null) {
                 scheduled.setIdVendor(schedule.getVendor());
             }
             if (schedule.getComment() != null && !schedule.getComment().isEmpty()) {
                 scheduled.setComment(schedule.getComment());
             }
-            // 'accepted' podría no ser relevante aquí si el Courier solo está recolectando
-            // scheduled.setAccepted(false); // O el valor que corresponda
+            // scheduled.setAccepted(false); // Ajustar si es necesario para este flujo
 
 			registro.setIdEstatus(idEstatusNuevo);
-
-			// ---> INICIO DE LA NUEVA LÓGICA DE SHOPIFY <---
-			if (registro.getOrder().isShopifyOrder() &&
-				ID_ESTATUS_AGENDA_ACEPTADA_PENDIENTE_RECOLECCION.equals(idEstatusOriginal) &&
-				ID_ESTATUS_RECOLECTADO.equals(idEstatusNuevo)) {
-
-				VendorDto vendor = getVendor(registro);
-				if (vendor != null && vendor.getShopifyStoreUrl() != null && vendor.getShopifyAccessToken() != null) {
-					log.info("Pedido Shopify {} cambiando de estado {} a {}. Intentando crear fulfillment con tracking.",
-							 registro.getOrder().getOrderKey() != null ? registro.getOrder().getOrderKey().toString() : registro.getOrder().getId(),
-							 idEstatusOriginal, idEstatusNuevo);
-
-					String shopifyFulfillmentId = shopifySyncService.createFulfillmentWithTracking(vendor, registro, ROCKET_BASE_URL);
-
-					if (shopifyFulfillmentId != null && !shopifyFulfillmentId.isEmpty()) {
-						registro.getOrder().setShopifyFulfillmentId(shopifyFulfillmentId);
-						log.info("Fulfillment de Shopify creado con ID {} para orderKey {}", shopifyFulfillmentId,
-								 registro.getOrder().getOrderKey() != null ? registro.getOrder().getOrderKey().toString() : registro.getOrder().getId());
-					} else {
-						log.warn("No se pudo crear/obtener el fulfillment ID de Shopify para orderKey {}",
-								 registro.getOrder().getOrderKey() != null ? registro.getOrder().getOrderKey().toString() : registro.getOrder().getId());
-						// Considerar añadir un mensaje específico a la 'respuesta' para este pedido.
-					}
-				} else {
-					log.warn("No se puede sincronizar con Shopify para orderKey {}: Vendor o configuración de Shopify faltante.",
-							 registro.getOrder().getOrderKey() != null ? registro.getOrder().getOrderKey().toString() : registro.getOrder().getId());
-				}
-			}
-			// ---> FIN DE LA NUEVA LÓGICA DE SHOPIFY <---
 
 			registros.add(registro);
 		} // Fin del bucle for
