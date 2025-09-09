@@ -466,7 +466,7 @@ public class EstatusController {
         // IDs de estatus relevantes y URL base de Rocket
         final Integer ID_ESTATUS_AGENDA_ACEPTADA_PENDIENTE_RECOLECCION = 3;
         final Integer ID_ESTATUS_RECOLECTADO = 6;
-        final String ROCKET_BASE_URL = "https://main.d3je47rbud1pwk.amplifyapp.com";
+        final String ROCKET_BASE_URL = "https://www.rocketcourier.io/";
 
         List<RegistroServiceOutDto> responseFramework = new ArrayList<>(); // Renombrado para claridad
         actualizaEstatusServiceInDtoList.forEach(dto -> {
