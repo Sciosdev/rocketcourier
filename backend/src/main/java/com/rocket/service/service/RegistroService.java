@@ -236,8 +236,8 @@ public class RegistroService {
             if (regis.getShipping_address().getProvince() == null || regis.getShipping_address().getProvince().trim().isEmpty()) {
                 mensaje.append("Shipping Province: es un campo requerido. ");
             }
-            if (regis.getShipping_address().getZip() == null || regis.getShipping_address().getZip().trim().isEmpty()) {
-                mensaje.append("Shipping Zip: es un campo requerido. ");
+            if (regis.getShipping_address().getZip() != null && regis.getShipping_address().getZip().trim().isEmpty()) {
+                mensaje.append("Shipping Zip: es opcional, pero si se proporciona no debe estar vacío. ");
             }
             if (regis.getShipping_address().getPhone() == null || regis.getShipping_address().getPhone().trim().isEmpty()) {
                 mensaje.append("Shipping Phone: es un campo requerido. ");
