@@ -240,13 +240,10 @@ public class RegistroService {
             if (regis.getShipping_address().getName() == null || regis.getShipping_address().getName().trim().isEmpty()) {
                 mensaje.append("Shipping Name: es un campo requerido. ");
             }
-            if (regis.getShipping_address().getStreet() == null || regis.getShipping_address().getStreet().trim().isEmpty()) {
-                mensaje.append("Shipping Street: es un campo requerido. ");
+            if ((regis.getShipping_address().getStreet() == null || regis.getShipping_address().getStreet().trim().isEmpty())
+                    && (regis.getShipping_address().getAddress1() == null || regis.getShipping_address().getAddress1().trim().isEmpty())) {
+                mensaje.append("Shipping Street o Address1: al menos uno de los campos debe estar presente. ");
             }
-            // Address1 es a menudo el mismo que Street para Shopify, así que la validación puede ser redundante si Street ya es obligatorio.
-            // if (regis.getShipping_address().getAddress1() == null || regis.getShipping_address().getAddress1().trim().isEmpty()) {
-            //     mensaje.append("Shipping Address1: es un campo requerido. ");
-            // }
             if (regis.getShipping_address().getCity() == null || regis.getShipping_address().getCity().trim().isEmpty()) {
                 mensaje.append("Shipping City: es un campo requerido. ");
             }
