@@ -162,6 +162,7 @@ public class TransaccionesRestController {
                             registro.getOrder().setOrderKey(new ObjectId());
                         }
 
+                        registroService.normalize(registro);
                         String validationError = registroService.validacion(registro);
                         if (validationError == null || validationError.trim().isEmpty()) {
                             EstatusLogDto estatusLog = new EstatusLogDto();
@@ -209,7 +210,8 @@ public class TransaccionesRestController {
                        registro.getOrder().setOrderKey(new ObjectId());
                     }
 
-                    // Aquí se podría llamar a registroService.validacion(registro) si se desea la misma validación para CSV
+                    // Aquí se podría normalizar y validar el registro si se desea la misma validación para CSV
+                    // registroService.normalize(registro);
                     // String validationErrorCSV = registroService.validacion(registro);
                     // if (validationErrorCSV == null || validationErrorCSV.trim().isEmpty()) { ... }
 

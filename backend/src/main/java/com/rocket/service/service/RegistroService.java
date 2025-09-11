@@ -155,9 +155,9 @@ public class RegistroService {
 			return registros.get(0);
 	}
 
-	public List<RegistroServiceOutDto> consultaRegistro(Date fDate, Date tDate, List<String> customer,
-			Integer idEstatus,
-			String courier) {
+        public List<RegistroServiceOutDto> consultaRegistro(Date fDate, Date tDate, List<String> customer,
+                        Integer idEstatus,
+                        String courier) {
 
 		Calendar toDate = Calendar.getInstance();
 		toDate.setTime(tDate);
@@ -200,11 +200,28 @@ public class RegistroService {
 			});
 		}
 
-		return registros;
-	}
+                return registros;
+        }
 
-	public String validacion(RegistryDto regis) {
-		StringBuilder mensaje = new StringBuilder();
+        public void normalize(RegistryDto regis) {
+                if (regis == null || regis.getShipping_address() == null) {
+                        return;
+                }
+
+                String zip = regis.getShipping_address().getZip();
+                if (zip == null || zip.replaceAll("[-'\"\\s]", "").isEmpty()) {
+                        regis.getShipping_address().setZip(null);
+                }
+
+                String street = regis.getShipping_address().getStreet();
+                String address1 = regis.getShipping_address().getAddress1();
+                if ((street == null || street.trim().isEmpty()) && address1 != null && !address1.trim().isEmpty()) {
+                        regis.getShipping_address().setStreet(address1);
+                }
+        }
+
+        public String validacion(RegistryDto regis) {
+                StringBuilder mensaje = new StringBuilder();
 
         if (regis.getOrder() == null) {
             mensaje.append("Datos del pedido no pueden ser nulos. ");
